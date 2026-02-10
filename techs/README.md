@@ -10,3 +10,5 @@ Run `/research {tech}` to research a technology and create reference docs for sk
 
 | Technology | Status | Domain | Description |
 |------------|--------|--------|-------------|
+| Rive | Researched | Interactive Animation | Data Binding protocol — defines the structure XState mirrors |
+| XState | Researched | State Management | App logic layer structured as Rive-compatible spec |

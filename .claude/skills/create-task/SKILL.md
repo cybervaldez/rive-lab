@@ -1,6 +1,6 @@
 ---
 name: create-task
-description: Plan and implement tasks for the rive-playbook-guidelines WebUI with e2e test validation. Use when the user asks to implement a feature, fix a bug, update functionality, or any task that modifies the WebUI codebase.
+description: Plan and implement tasks for the rive-lab WebUI with e2e test validation. Use when the user asks to implement a feature, fix a bug, update functionality, or any task that modifies the WebUI codebase.
 argument-hint: <task description>
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
@@ -77,7 +77,7 @@ Note: Unlike ux-planner/ui-planner, create-task does not need user confirmation 
 
 # Task Implementation Skill
 
-You are implementing tasks for the rive-playbook-guidelines WebUI. Each task includes planning, implementation, and **automated e2e test validation**.
+You are implementing tasks for the rive-lab WebUI. Each task includes planning, implementation, and **automated e2e test validation**.
 
 **IMPORTANT:** Before implementing, review your project's coding conventions documentation.
 

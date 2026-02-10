@@ -1,23 +1,27 @@
 {
-  "name": "rive-playbook-guidelines",
+  "name": "rive-lab",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "test:e2e": "bash tests/test_welcome.sh"
+    "dev": "vite dev",
+    "build": "vite build",
+    "start": "node .output/server/index.mjs",
+    "test:e2e": "bash tests/test_welcome.sh && bash tests/test_startup.sh && bash tests/test_command_palette.sh && bash tests/test_demo_controls.sh && bash tests/test_contract_tab.sh && bash tests/test_events_tab.sh && bash tests/test_instruct_tab.sh && bash tests/test_theme_toggle.sh && bash tests/test_pagination.sh && bash tests/test_state_readout.sh"
   },
   "dependencies": {
+    "@tanstack/react-router": "^1.159.5",
+    "@tanstack/react-start": "^1.159.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@vitejs/plugin-react": "^4.0.0",
-    "typescript": "^5.0.0",
-    "vite": "^5.0.0"
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
   }
 }

@@ -23,3 +23,9 @@ build/
 
 # Test artifacts
 tests/e2e-runs/
+
+# Vite temp files
+vite.config.timestamp_*.js
+
+# Design exploration
+src/previews/

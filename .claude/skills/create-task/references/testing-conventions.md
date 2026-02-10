@@ -1,4 +1,4 @@
-# rive-playbook-guidelines Testing Conventions
+# rive-lab Testing Conventions
 
 Detailed patterns for e2e testing with agent-browser and curl.
 
@@ -8,7 +8,7 @@ Detailed patterns for e2e testing with agent-browser and curl.
 
 | Placeholder | Your Value | Description |
 |-------------|------------|-------------|
-| `rive-playbook-guidelines` | | Your project name |
+| `rive-lab` | | Your project name |
 | `test-fixtures` | | Test job/fixture name |
 | `5173` | | Default server port |
 | `npm run dev` | | Server startup command |

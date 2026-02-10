@@ -85,6 +85,7 @@ Skills use a lazy evaluation approach to tech-specific documentation:
 | **Build Tools** | Vite, Turbopack, esbuild, Webpack | create-task, e2e (server startup) |
 | **Styling** | Tailwind, CSS Modules, Styled Components | ux-review, ux-planner, ui-planner, ui-review |
 | **Auth** | NextAuth, Clerk, Auth0, Supabase Auth | coding-guard, e2e, create-task |
+| **Interactive Animation** | Rive | create-task, coding-guard, cli-first, e2e-guard, e2e, e2e-investigate, ux-review |
 
 ---
 
