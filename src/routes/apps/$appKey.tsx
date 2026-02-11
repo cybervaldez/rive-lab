@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getApps } from '../../lib/recipes'
 import { useTheme } from '../../lib/useTheme'
 import { usePinned } from '../../lib/usePinned'
@@ -22,10 +22,10 @@ function AppDetailPage() {
   const [theme, toggleTheme] = useTheme()
   const [isPinned, togglePinned] = usePinned()
   const [checkedSteps, toggleStep] = useChecklist(appKey)
-  const [openPanel, setOpenPanel] = useState<'instruct' | 'contract' | 'events' | null>(() =>
+  const [openPanel, setOpenPanel] = useState<'instruct' | null>(() =>
     isPinned ? 'instruct' : null,
   )
-  const lastPanelRef = useRef<'instruct' | 'contract' | 'events'>('instruct')
+  const lastPanelRef = useRef<'instruct'>('instruct')
 
   const app = apps.find((r) => r.key === appKey)!
   const [machineState] = useState(app.state)
@@ -50,10 +50,6 @@ function AppDetailPage() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  const togglePanel = useCallback((panel: 'instruct' | 'contract' | 'events') => {
-    setOpenPanel((prev) => (prev === panel ? null : panel))
-  }, [])
-
   return (
     <div className="app-theater" data-testid="app-theater">
       {/* Floating right-edge panel toggle */}
@@ -61,7 +57,7 @@ function AppDetailPage() {
         <button
           className={`top-right-nav-link${openPanel !== null ? ' active' : ''}`}
           data-testid="tab-panel"
-          onClick={() => setOpenPanel((prev) => (prev !== null ? null : (lastPanelRef.current ?? 'instruct')))}
+          onClick={() => setOpenPanel((prev) => (prev !== null ? null : 'instruct'))}
         >
           panel
         </button>
@@ -131,122 +127,33 @@ function AppDetailPage() {
             >
               {isPinned ? '\u229F' : '\u229E'}
             </button>
-            <nav className="overlay-tabs">
-              <button
-                className={`overlay-tab${displayPanel === 'instruct' ? ' active' : ''}`}
-                onClick={() => togglePanel('instruct')}
-              >
-                instruct
-              </button>
-              <button
-                className={`overlay-tab${displayPanel === 'contract' ? ' active' : ''}`}
-                onClick={() => togglePanel('contract')}
-              >
-                contract
-              </button>
-              <button
-                className={`overlay-tab${displayPanel === 'events' ? ' active' : ''}`}
-                onClick={() => togglePanel('events')}
-              >
-                events
-              </button>
-            </nav>
           </div>
           <div className="overlay-body">
-            {displayPanel === 'instruct' && (
-              <div className="instruct-panel" data-testid="instruct-panel">
-                <ol className="instruct-list" data-testid="instruct-list">
-                  {app.instruct.map((item, i) => (
-                    <li
-                      key={i}
-                      className={`instruct-step${checkedSteps.has(i) ? ' instruct-step--checked' : ''}`}
-                      data-testid={`instruct-step-${i}`}
-                      onClick={() => toggleStep(i)}
-                    >
-                      <span className="instruct-step-title">{item.step}</span>
-                      <span className="instruct-step-detail">{item.detail}</span>
-                    </li>
-                  ))}
-                </ol>
-                <p className="instruct-hint" data-testid="instruct-hint">
-                  Click on an item to mark it as complete
-                </p>
-                <button
-                  className="instruct-test-btn"
-                  data-testid="instruct-test-btn"
-                  onClick={wizard.openWizard}
-                >
-                  test
-                </button>
-              </div>
-            )}
-            {displayPanel === 'contract' && (
-              <div className="contract-panel" data-testid="contract-panel">
-                <table className="contract-table" data-testid="contract-table">
-                  <thead>
-                    <tr>
-                      <th>XState (now)</th>
-                      <th>Rive (later)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      const groups: { label: string; rows: typeof app.contract }[] = []
-                      const cats = [
-                        { prefix: 'context.', label: 'Properties' },
-                        { prefix: 'event:', label: 'Triggers' },
-                        { prefix: 'state:', label: 'States' },
-                      ]
-                      for (const cat of cats) {
-                        const rows = app.contract.filter((r) => r.xstate.startsWith(cat.prefix))
-                        if (rows.length > 0) groups.push({ label: cat.label, rows })
-                      }
-                      return groups.map((group) => (
-                        <Fragment key={group.label}>
-                          <tr className="contract-group-header">
-                            <td colSpan={2}>{group.label}</td>
-                          </tr>
-                          {group.rows.map((row, i) => (
-                            <tr key={i} data-testid="contract-row">
-                              <td>{row.xstate}</td>
-                              <td>{row.rive}</td>
-                            </tr>
-                          ))}
-                        </Fragment>
-                      ))
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {displayPanel === 'events' && (
-              <div className="events-panel" data-testid="events-panel">
-                <table className="events-table" data-testid="events-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Direction</th>
-                      <th>Type</th>
-                      <th>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {app.events.map((evt, i) => (
-                      <tr key={i}>
-                        <td>{evt.name}</td>
-                        <td>
-                          <span className={`events-dir events-dir--${evt.direction}`}>
-                            {evt.direction === 'in' ? '← receives' : '→ fires'}
-                          </span>
-                        </td>
-                        <td>{evt.type}</td>
-                        <td>{evt.description}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <div className="instruct-panel" data-testid="instruct-panel">
+              <ol className="instruct-list" data-testid="instruct-list">
+                {app.instruct.map((item, i) => (
+                  <li
+                    key={i}
+                    className={`instruct-step${checkedSteps.has(i) ? ' instruct-step--checked' : ''}`}
+                    data-testid={`instruct-step-${i}`}
+                    onClick={() => toggleStep(i)}
+                  >
+                    <span className="instruct-step-title">{item.step}</span>
+                    <span className="instruct-step-detail">{item.detail}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="instruct-hint" data-testid="instruct-hint">
+                Click on an item to mark it as complete
+              </p>
+              <button
+                className="instruct-test-btn"
+                data-testid="instruct-test-btn"
+                onClick={wizard.openWizard}
+              >
+                test
+              </button>
+            </div>
           </div>
         </div>
       </div>
