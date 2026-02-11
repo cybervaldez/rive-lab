@@ -2,6 +2,7 @@ import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { getApps } from '../../lib/recipes'
 import { useTheme } from '../../lib/useTheme'
+import { usePinned } from '../../lib/usePinned'
 
 const apps = getApps()
 
@@ -17,8 +18,10 @@ export const Route = createFileRoute('/apps/$appKey')({
 function AppDetailPage() {
   const { appKey } = Route.useParams()
   const [theme, toggleTheme] = useTheme()
-  const [openPanel, setOpenPanel] = useState<'instruct' | 'contract' | 'events' | null>(null)
-  const [isPinned, setIsPinned] = useState(false)
+  const [isPinned, togglePinned] = usePinned()
+  const [openPanel, setOpenPanel] = useState<'instruct' | 'contract' | 'events' | null>(() =>
+    isPinned ? 'instruct' : null,
+  )
   const lastPanelRef = useRef<'instruct' | 'contract' | 'events'>('instruct')
 
   const app = apps.find((r) => r.key === appKey)!
@@ -117,7 +120,7 @@ function AppDetailPage() {
           <button
             className="overlay-pin"
             data-testid="overlay-pin"
-            onClick={() => setIsPinned((p) => !p)}
+            onClick={togglePinned}
             aria-label={isPinned ? 'Unpin panel' : 'Pin panel'}
           >
             {isPinned ? '\u229F' : '\u229E'}

@@ -2,6 +2,7 @@ import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-ro
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { getComponents, DEFAULT_RECIPE_KEY } from '../../lib/recipes'
 import { useTheme } from '../../lib/useTheme'
+import { usePinned } from '../../lib/usePinned'
 import { ProgressBarDemo } from '../../components/ProgressBarDemo'
 import { ToggleSwitchDemo } from '../../components/ToggleSwitchDemo'
 import { CounterDemo } from '../../components/CounterDemo'
@@ -23,9 +24,11 @@ function RecipePage() {
   const navigate = useNavigate()
 
   const [theme, toggleTheme] = useTheme()
+  const [isPinned, togglePinned] = usePinned()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [openPanel, setOpenPanel] = useState<'instruct' | 'contract' | 'events' | null>(null)
-  const [isPinned, setIsPinned] = useState(false)
+  const [openPanel, setOpenPanel] = useState<'instruct' | 'contract' | 'events' | null>(() =>
+    isPinned ? 'instruct' : null,
+  )
   const [progress, setProgress] = useState(65)
   const [machineState, setMachineState] = useState('loading')
   const [isActive, setIsActive] = useState(true)
@@ -281,7 +284,7 @@ function RecipePage() {
               <button
                 className="overlay-pin"
                 data-testid="overlay-pin"
-                onClick={() => setIsPinned((p) => !p)}
+                onClick={togglePinned}
                 aria-label={isPinned ? 'Unpin panel' : 'Pin panel'}
               >
                 {isPinned ? '\u229F' : '\u229E'}
