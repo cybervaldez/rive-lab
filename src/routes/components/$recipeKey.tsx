@@ -1,15 +1,21 @@
 import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { useMachine } from '@xstate/react'
 import { getComponents, DEFAULT_RECIPE_KEY } from '../../lib/recipes'
+import { getMachine } from '../../machines'
+import { useXStateDebug } from '../../lib/useXStateDebug'
+import { createXStateInspector } from '../../lib/xstateLogger'
 import { useTheme } from '../../lib/useTheme'
 import { usePinned } from '../../lib/usePinned'
 import { useChecklist } from '../../lib/useChecklist'
+import { useTestWizard } from '../../lib/useTestWizard'
 import { ProgressBarDemo } from '../../components/ProgressBarDemo'
 import { ToggleSwitchDemo } from '../../components/ToggleSwitchDemo'
 import { CounterDemo } from '../../components/CounterDemo'
 import type { DemoProps } from '../../components/types'
 
 const components = getComponents()
+const inspector = createXStateInspector()
 
 export const Route = createFileRoute('/components/$recipeKey')({
   beforeLoad: ({ params }) => {
@@ -31,14 +37,24 @@ function RecipePage() {
   const [openPanel, setOpenPanel] = useState<'instruct' | 'contract' | 'events' | null>(() =>
     isPinned ? 'instruct' : null,
   )
-  const [progress, setProgress] = useState(65)
-  const [machineState, setMachineState] = useState('loading')
-  const [isActive, setIsActive] = useState(true)
-  const animRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastPanelRef = useRef<'instruct' | 'contract' | 'events'>('instruct')
 
   const recipe = components.find((r) => r.key === recipeKey)!
   const currentIndex = components.findIndex((r) => r.key === recipeKey)
+
+  // XState machine
+  const machine = getMachine(recipeKey)
+  const [snapshot, send, actorRef] = useMachine(machine, { inspect: inspector })
+
+  // Expose to window.__xstate__
+  const machineId = machine.id
+  useXStateDebug(machineId, actorRef)
+
+  const stateValue = typeof snapshot.value === 'string' ? snapshot.value : JSON.stringify(snapshot.value)
+  const ctx = snapshot.context as Record<string, any>
+
+  // Test wizard
+  const wizard = useTestWizard(recipeKey, machineId, recipe.instruct)
 
   // Track last opened panel so content stays visible during slide-out
   useEffect(() => {
@@ -48,16 +64,8 @@ function RecipePage() {
   const displayPanel = openPanel ?? lastPanelRef.current
   const pinnedOpen = isPinned && openPanel !== null
 
-  // Reset state when recipeKey changes
+  // Reset panels when recipeKey changes
   useEffect(() => {
-    if (animRef.current) {
-      clearTimeout(animRef.current)
-      animRef.current = null
-    }
-    const r = components.find((rec) => rec.key === recipeKey)!
-    setProgress(r.progress)
-    setMachineState(r.state)
-    setIsActive(r.active)
     if (!isPinned) setOpenPanel(null)
     setSidebarOpen(false)
   }, [recipeKey, isPinned])
@@ -74,16 +82,10 @@ function RecipePage() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Expose app state for pipeline testing
+  // Expose app state for pipeline testing (backward compat)
   useEffect(() => {
-    ;(window as any).__xstate__ = {
-      state: machineState,
-      context: { progress, isActive },
-      recipeIndex: currentIndex,
-      recipeName: recipe.key,
-    }
     ;(window as any).appState = { view: 'welcome', initialized: true }
-  }, [machineState, progress, isActive, currentIndex, recipe.key])
+  }, [])
 
   const paginate = useCallback(
     (dir: number) => {
@@ -93,14 +95,22 @@ function RecipePage() {
     [currentIndex, navigate],
   )
 
+  // Derive readout values from machine state
+  const getReadoutValue = (source: string): string => {
+    if (source === 'state') return stateValue
+    if (source === 'progress') {
+      if ('progress' in ctx) return String(ctx.progress)
+      if ('count' in ctx) return String(ctx.count)
+      throw new Error(`No progress/count in context for ${recipeKey}`)
+    }
+    if (source === 'active') return String(ctx.isActive)
+    throw new Error(`Unknown readout source: ${source}`)
+  }
+
   const demoProps: DemoProps = {
-    machineState,
-    setMachineState,
-    progress,
-    setProgress,
-    isActive,
-    setIsActive,
-    animRef,
+    state: stateValue,
+    context: ctx,
+    send,
   }
 
   const togglePanel = useCallback((panel: 'instruct' | 'contract' | 'events') => {
@@ -139,26 +149,18 @@ function RecipePage() {
         <span className="app-topbar-name" data-testid="topbar-name">
           {recipe.name}
           <span className="app-topbar-readout" data-testid="state-readout">
-            {recipe.readout.map((item) => {
-              const value =
-                item.source === 'state'
-                  ? machineState
-                  : item.source === 'progress'
-                    ? String(progress)
-                    : String(isActive)
-              return (
-                <span
-                  key={item.source}
-                  className="app-topbar-readout-item"
-                  data-testid={`readout-item-${item.source}`}
-                >
-                  {item.label}{' '}
-                  <span className="app-topbar-readout-value" data-testid={`readout-${item.source}`}>
-                    {value}
-                  </span>
+            {recipe.readout.map((item) => (
+              <span
+                key={item.source}
+                className="app-topbar-readout-item"
+                data-testid={`readout-item-${item.source}`}
+              >
+                {item.label}{' '}
+                <span className="app-topbar-readout-value" data-testid={`readout-${item.source}`}>
+                  {getReadoutValue(item.source)}
                 </span>
-              )
-            })}
+              </span>
+            ))}
           </span>
         </span>
         <button
@@ -331,6 +333,13 @@ function RecipePage() {
                   <p className="instruct-hint" data-testid="instruct-hint">
                     Click on an item to mark it as complete
                   </p>
+                  <button
+                    className="instruct-test-btn"
+                    data-testid="instruct-test-btn"
+                    onClick={wizard.openWizard}
+                  >
+                    test
+                  </button>
                 </div>
               )}
               {displayPanel === 'contract' && (
@@ -407,6 +416,112 @@ function RecipePage() {
           </div>
         </main>
       </div>
+
+      {/* Test Wizard Modal */}
+      {wizard.open && (
+        <>
+          <div className="test-wizard-backdrop" data-testid="test-wizard-backdrop" onClick={wizard.closeWizard} />
+          <div className="test-wizard" data-testid="test-wizard">
+            <div className="test-wizard-header">
+              <span className="test-wizard-title">TEST WIZARD</span>
+              <span className="test-wizard-step-counter">
+                step {wizard.stepIndex + 1}/{recipe.instruct.length}
+              </span>
+              <button className="test-wizard-close" data-testid="test-wizard-close" onClick={wizard.closeWizard}>
+                &times;
+              </button>
+            </div>
+            <div className="test-wizard-body">
+              <div className="test-wizard-step" data-testid="test-wizard-step">
+                <span className="test-wizard-step-title">{recipe.instruct[wizard.stepIndex].step}</span>
+                <span className="test-wizard-step-detail">{recipe.instruct[wizard.stepIndex].detail}</span>
+              </div>
+              {(() => {
+                const checks = wizard.results[wizard.stepIndex]
+                const onLoad = checks.filter((c) => c.category === 'on-load')
+                const eventDriven = checks.filter((c) => c.category === 'event-driven')
+                return (
+                  <>
+                    {onLoad.length > 0 && (
+                      <div className="test-wizard-checks" data-testid="test-wizard-onload">
+                        <span className="test-wizard-checks-label">ON-LOAD CHECKS</span>
+                        {onLoad.map((c, i) => (
+                          <div key={i} className={`test-wizard-check test-wizard-check--${c.status}`}>
+                            <span className="test-wizard-check-icon">
+                              {c.status === 'pass' ? '\u2713' : c.status === 'fail' ? '\u2717' : '\u25CB'}
+                            </span>
+                            {c.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {eventDriven.length > 0 && (
+                      <div className="test-wizard-checks" data-testid="test-wizard-events">
+                        <span className="test-wizard-checks-label">EVENT-DRIVEN CHECKS</span>
+                        {eventDriven.map((c, i) => (
+                          <div key={i} className={`test-wizard-check test-wizard-check--${c.status}`}>
+                            <span className="test-wizard-check-icon">
+                              {c.status === 'pass' ? '\u2713' : c.status === 'fail' ? '\u2717' : '\u25CB'}
+                            </span>
+                            {c.label}
+                          </div>
+                        ))}
+                        <button
+                          className="instruct-test-btn"
+                          data-testid="test-wizard-run-events"
+                          onClick={wizard.runEventChecks}
+                        >
+                          run event tests
+                        </button>
+                      </div>
+                    )}
+                    {checks.length === 0 && (
+                      <div className="test-wizard-checks">
+                        <span className="test-wizard-checks-label">No verifications for this step</span>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
+              <div className="test-wizard-rive-section" data-testid="test-wizard-rive">
+                <span className="test-wizard-rive-label">rive file (future)</span>
+                <input
+                  className="test-wizard-rive-input"
+                  data-testid="test-wizard-rive-input"
+                  type="text"
+                  placeholder="https://example.com/file.riv"
+                  value={wizard.riveUrl}
+                  onChange={(e) => wizard.updateRiveUrl(e.target.value)}
+                  disabled
+                />
+              </div>
+            </div>
+            <div className="test-wizard-footer">
+              <div className="test-wizard-summary" data-testid="test-wizard-summary">
+                {wizard.passedChecks}/{wizard.totalChecks} passed
+              </div>
+              <div className="test-wizard-nav">
+                <button
+                  className="demo-btn"
+                  data-testid="test-wizard-prev"
+                  onClick={wizard.prevStep}
+                  disabled={wizard.stepIndex === 0}
+                >
+                  &larr; prev
+                </button>
+                <button
+                  className="demo-btn"
+                  data-testid="test-wizard-next"
+                  onClick={wizard.nextStep}
+                  disabled={wizard.stepIndex === recipe.instruct.length - 1}
+                >
+                  next &rarr;
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       <footer className="bottom-footer" data-testid="bottom-footer">
         <nav className="pagination" data-testid="pagination">

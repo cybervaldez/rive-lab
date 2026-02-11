@@ -1,43 +1,50 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { DemoProps } from './types'
 
-export function ProgressBarDemo({
-  setMachineState,
-  progress,
-  setProgress,
-  setIsActive,
-  animRef,
-}: DemoProps) {
-  const handleStart = useCallback(() => {
+export function ProgressBarDemo({ state, context, send }: DemoProps) {
+  const animRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const progress = context.progress as number
+
+  // Auto-tick progress when in loading state
+  useEffect(() => {
+    if (state !== 'loading') return
     if (animRef.current) return
-    setIsActive(true)
-    setMachineState('loading')
 
     const tick = () => {
-      setProgress((prev) => {
-        const next = prev + 1
-        if (next >= 100) {
-          setIsActive(false)
-          setMachineState('complete')
-          animRef.current = null
-          return 100
-        }
-        animRef.current = setTimeout(tick, 60)
-        return next
-      })
+      animRef.current = setTimeout(() => {
+        // Read current progress via the context the machine provides
+        // We send SET_PROGRESS, machine updates context, component re-renders
+        send({ type: 'SET_PROGRESS', value: progress + 1 })
+        animRef.current = null
+      }, 60)
     }
-    tick()
-  }, [animRef, setIsActive, setMachineState, setProgress])
+
+    if (progress < 100) {
+      tick()
+    } else {
+      send({ type: 'complete' })
+    }
+
+    return () => {
+      if (animRef.current) {
+        clearTimeout(animRef.current)
+        animRef.current = null
+      }
+    }
+  }, [state, progress, send])
+
+  const handleStart = useCallback(() => {
+    if (state === 'loading') return
+    send({ type: 'start' })
+  }, [state, send])
 
   const handleReset = useCallback(() => {
     if (animRef.current) {
       clearTimeout(animRef.current)
       animRef.current = null
     }
-    setProgress(0)
-    setMachineState('idle')
-    setIsActive(false)
-  }, [animRef, setMachineState, setProgress, setIsActive])
+    send({ type: 'reset' })
+  }, [send])
 
   return (
     <div className="demo-progress" data-testid="demo-progress">

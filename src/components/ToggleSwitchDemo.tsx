@@ -1,22 +1,12 @@
 import { useCallback } from 'react'
 import type { DemoProps } from './types'
 
-export function ToggleSwitchDemo({
-  machineState,
-  setMachineState,
-  setIsActive,
-}: DemoProps) {
-  const isOn = machineState === 'on'
+export function ToggleSwitchDemo({ state, send }: DemoProps) {
+  const isOn = state === 'on'
 
   const handleToggle = useCallback(() => {
-    if (isOn) {
-      setMachineState('off')
-      setIsActive(false)
-    } else {
-      setMachineState('on')
-      setIsActive(true)
-    }
-  }, [isOn, setMachineState, setIsActive])
+    send({ type: 'toggle' })
+  }, [send])
 
   return (
     <div className="demo-toggle" data-testid="demo-toggle">

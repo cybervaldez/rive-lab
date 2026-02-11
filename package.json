@@ -12,8 +12,10 @@
   "dependencies": {
     "@tanstack/react-router": "^1.159.5",
     "@tanstack/react-start": "^1.159.5",
+    "@xstate/react": "^6.0.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "xstate": "^5.26.0"
   },
   "engines": {
     "node": ">=22.12.0"

@@ -1,47 +1,17 @@
 import { useCallback } from 'react'
 import type { DemoProps } from './types'
 
-const MAX_COUNT = 10
-
-export function CounterDemo({
-  machineState,
-  setMachineState,
-  progress,
-  setProgress,
-  setIsActive,
-  animRef,
-}: DemoProps) {
-  const count = progress
+export function CounterDemo({ state, context, send }: DemoProps) {
+  const count = context.count as number
 
   const handleIncrement = useCallback(() => {
-    if (machineState === 'maxed') return
-    if (animRef.current) {
-      clearTimeout(animRef.current)
-      animRef.current = null
-    }
-
-    setProgress((prev) => {
-      const next = prev + 1
-      if (next >= MAX_COUNT) {
-        setMachineState('maxed')
-        setIsActive(false)
-        return MAX_COUNT
-      }
-      setMachineState('counting')
-      setIsActive(true)
-      return next
-    })
-  }, [machineState, animRef, setProgress, setMachineState, setIsActive])
+    if (state === 'maxed') return
+    send({ type: 'increment' })
+  }, [state, send])
 
   const handleReset = useCallback(() => {
-    if (animRef.current) {
-      clearTimeout(animRef.current)
-      animRef.current = null
-    }
-    setProgress(0)
-    setMachineState('idle')
-    setIsActive(false)
-  }, [animRef, setProgress, setMachineState, setIsActive])
+    send({ type: 'reset' })
+  }, [send])
 
   return (
     <div className="demo-counter" data-testid="demo-counter">

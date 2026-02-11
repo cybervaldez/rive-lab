@@ -4,6 +4,7 @@ import { getApps } from '../../lib/recipes'
 import { useTheme } from '../../lib/useTheme'
 import { usePinned } from '../../lib/usePinned'
 import { useChecklist } from '../../lib/useChecklist'
+import { useTestWizard } from '../../lib/useTestWizard'
 
 const apps = getApps()
 
@@ -27,7 +28,10 @@ function AppDetailPage() {
   const lastPanelRef = useRef<'instruct' | 'contract' | 'events'>('instruct')
 
   const app = apps.find((r) => r.key === appKey)!
-  const [machineState, setMachineState] = useState(app.state)
+  const [machineState] = useState(app.state)
+
+  // Test wizard (no machine for apps yet, use appKey as machineId)
+  const wizard = useTestWizard(appKey, appKey, app.instruct)
 
   // Track last opened panel so content stays visible during slide-out
   useEffect(() => {
@@ -109,136 +113,249 @@ function AppDetailPage() {
         {/* Overlay Panel — slides in from right, same as component page */}
         <div
           className={`overlay-panel${openPanel ? ' overlay-panel--open' : ''}${pinnedOpen ? ' overlay-panel--pinned' : ''}`}
-        data-testid="overlay-panel"
-      >
-        <div className="overlay-header">
-          <button
-            className="overlay-close"
-            data-testid="overlay-close"
-            onClick={() => setOpenPanel(null)}
-          >
-            &times;
-          </button>
-          <button
-            className="overlay-pin"
-            data-testid="overlay-pin"
-            onClick={togglePinned}
-            aria-label={isPinned ? 'Unpin panel' : 'Pin panel'}
-          >
-            {isPinned ? '\u229F' : '\u229E'}
-          </button>
-          <nav className="overlay-tabs">
+          data-testid="overlay-panel"
+        >
+          <div className="overlay-header">
             <button
-              className={`overlay-tab${displayPanel === 'instruct' ? ' active' : ''}`}
-              onClick={() => togglePanel('instruct')}
+              className="overlay-close"
+              data-testid="overlay-close"
+              onClick={() => setOpenPanel(null)}
             >
-              instruct
+              &times;
             </button>
             <button
-              className={`overlay-tab${displayPanel === 'contract' ? ' active' : ''}`}
-              onClick={() => togglePanel('contract')}
+              className="overlay-pin"
+              data-testid="overlay-pin"
+              onClick={togglePinned}
+              aria-label={isPinned ? 'Unpin panel' : 'Pin panel'}
             >
-              contract
+              {isPinned ? '\u229F' : '\u229E'}
             </button>
-            <button
-              className={`overlay-tab${displayPanel === 'events' ? ' active' : ''}`}
-              onClick={() => togglePanel('events')}
-            >
-              events
-            </button>
-          </nav>
-        </div>
-        <div className="overlay-body">
-          {displayPanel === 'instruct' && (
-            <div className="instruct-panel" data-testid="instruct-panel">
-              <ol className="instruct-list" data-testid="instruct-list">
-                {app.instruct.map((item, i) => (
-                  <li
-                    key={i}
-                    className={`instruct-step${checkedSteps.has(i) ? ' instruct-step--checked' : ''}`}
-                    data-testid={`instruct-step-${i}`}
-                    onClick={() => toggleStep(i)}
-                  >
-                    <span className="instruct-step-title">{item.step}</span>
-                    <span className="instruct-step-detail">{item.detail}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="instruct-hint" data-testid="instruct-hint">
-                Click on an item to mark it as complete
-              </p>
-            </div>
-          )}
-          {displayPanel === 'contract' && (
-            <div className="contract-panel" data-testid="contract-panel">
-              <table className="contract-table" data-testid="contract-table">
-                <thead>
-                  <tr>
-                    <th>XState (now)</th>
-                    <th>Rive (later)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    const groups: { label: string; rows: typeof app.contract }[] = []
-                    const cats = [
-                      { prefix: 'context.', label: 'Properties' },
-                      { prefix: 'event:', label: 'Triggers' },
-                      { prefix: 'state:', label: 'States' },
-                    ]
-                    for (const cat of cats) {
-                      const rows = app.contract.filter((r) => r.xstate.startsWith(cat.prefix))
-                      if (rows.length > 0) groups.push({ label: cat.label, rows })
-                    }
-                    return groups.map((group) => (
-                      <Fragment key={group.label}>
-                        <tr className="contract-group-header">
-                          <td colSpan={2}>{group.label}</td>
-                        </tr>
-                        {group.rows.map((row, i) => (
-                          <tr key={i} data-testid="contract-row">
-                            <td>{row.xstate}</td>
-                            <td>{row.rive}</td>
-                          </tr>
-                        ))}
-                      </Fragment>
-                    ))
-                  })()}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {displayPanel === 'events' && (
-            <div className="events-panel" data-testid="events-panel">
-              <table className="events-table" data-testid="events-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Direction</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {app.events.map((evt, i) => (
-                    <tr key={i}>
-                      <td>{evt.name}</td>
-                      <td>
-                        <span className={`events-dir events-dir--${evt.direction}`}>
-                          {evt.direction === 'in' ? '← receives' : '→ fires'}
-                        </span>
-                      </td>
-                      <td>{evt.type}</td>
-                      <td>{evt.description}</td>
-                    </tr>
+            <nav className="overlay-tabs">
+              <button
+                className={`overlay-tab${displayPanel === 'instruct' ? ' active' : ''}`}
+                onClick={() => togglePanel('instruct')}
+              >
+                instruct
+              </button>
+              <button
+                className={`overlay-tab${displayPanel === 'contract' ? ' active' : ''}`}
+                onClick={() => togglePanel('contract')}
+              >
+                contract
+              </button>
+              <button
+                className={`overlay-tab${displayPanel === 'events' ? ' active' : ''}`}
+                onClick={() => togglePanel('events')}
+              >
+                events
+              </button>
+            </nav>
+          </div>
+          <div className="overlay-body">
+            {displayPanel === 'instruct' && (
+              <div className="instruct-panel" data-testid="instruct-panel">
+                <ol className="instruct-list" data-testid="instruct-list">
+                  {app.instruct.map((item, i) => (
+                    <li
+                      key={i}
+                      className={`instruct-step${checkedSteps.has(i) ? ' instruct-step--checked' : ''}`}
+                      data-testid={`instruct-step-${i}`}
+                      onClick={() => toggleStep(i)}
+                    >
+                      <span className="instruct-step-title">{item.step}</span>
+                      <span className="instruct-step-detail">{item.detail}</span>
+                    </li>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                </ol>
+                <p className="instruct-hint" data-testid="instruct-hint">
+                  Click on an item to mark it as complete
+                </p>
+                <button
+                  className="instruct-test-btn"
+                  data-testid="instruct-test-btn"
+                  onClick={wizard.openWizard}
+                >
+                  test
+                </button>
+              </div>
+            )}
+            {displayPanel === 'contract' && (
+              <div className="contract-panel" data-testid="contract-panel">
+                <table className="contract-table" data-testid="contract-table">
+                  <thead>
+                    <tr>
+                      <th>XState (now)</th>
+                      <th>Rive (later)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const groups: { label: string; rows: typeof app.contract }[] = []
+                      const cats = [
+                        { prefix: 'context.', label: 'Properties' },
+                        { prefix: 'event:', label: 'Triggers' },
+                        { prefix: 'state:', label: 'States' },
+                      ]
+                      for (const cat of cats) {
+                        const rows = app.contract.filter((r) => r.xstate.startsWith(cat.prefix))
+                        if (rows.length > 0) groups.push({ label: cat.label, rows })
+                      }
+                      return groups.map((group) => (
+                        <Fragment key={group.label}>
+                          <tr className="contract-group-header">
+                            <td colSpan={2}>{group.label}</td>
+                          </tr>
+                          {group.rows.map((row, i) => (
+                            <tr key={i} data-testid="contract-row">
+                              <td>{row.xstate}</td>
+                              <td>{row.rive}</td>
+                            </tr>
+                          ))}
+                        </Fragment>
+                      ))
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {displayPanel === 'events' && (
+              <div className="events-panel" data-testid="events-panel">
+                <table className="events-table" data-testid="events-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Direction</th>
+                      <th>Type</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {app.events.map((evt, i) => (
+                      <tr key={i}>
+                        <td>{evt.name}</td>
+                        <td>
+                          <span className={`events-dir events-dir--${evt.direction}`}>
+                            {evt.direction === 'in' ? '← receives' : '→ fires'}
+                          </span>
+                        </td>
+                        <td>{evt.type}</td>
+                        <td>{evt.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-      </div>
+
+      {/* Test Wizard Modal */}
+      {wizard.open && (
+        <>
+          <div className="test-wizard-backdrop" data-testid="test-wizard-backdrop" onClick={wizard.closeWizard} />
+          <div className="test-wizard" data-testid="test-wizard">
+            <div className="test-wizard-header">
+              <span className="test-wizard-title">TEST WIZARD</span>
+              <span className="test-wizard-step-counter">
+                step {wizard.stepIndex + 1}/{app.instruct.length}
+              </span>
+              <button className="test-wizard-close" data-testid="test-wizard-close" onClick={wizard.closeWizard}>
+                &times;
+              </button>
+            </div>
+            <div className="test-wizard-body">
+              <div className="test-wizard-step" data-testid="test-wizard-step">
+                <span className="test-wizard-step-title">{app.instruct[wizard.stepIndex].step}</span>
+                <span className="test-wizard-step-detail">{app.instruct[wizard.stepIndex].detail}</span>
+              </div>
+              {(() => {
+                const checks = wizard.results[wizard.stepIndex]
+                const onLoad = checks.filter((c) => c.category === 'on-load')
+                const eventDriven = checks.filter((c) => c.category === 'event-driven')
+                return (
+                  <>
+                    {onLoad.length > 0 && (
+                      <div className="test-wizard-checks" data-testid="test-wizard-onload">
+                        <span className="test-wizard-checks-label">ON-LOAD CHECKS</span>
+                        {onLoad.map((c, i) => (
+                          <div key={i} className={`test-wizard-check test-wizard-check--${c.status}`}>
+                            <span className="test-wizard-check-icon">
+                              {c.status === 'pass' ? '\u2713' : c.status === 'fail' ? '\u2717' : '\u25CB'}
+                            </span>
+                            {c.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {eventDriven.length > 0 && (
+                      <div className="test-wizard-checks" data-testid="test-wizard-events">
+                        <span className="test-wizard-checks-label">EVENT-DRIVEN CHECKS</span>
+                        {eventDriven.map((c, i) => (
+                          <div key={i} className={`test-wizard-check test-wizard-check--${c.status}`}>
+                            <span className="test-wizard-check-icon">
+                              {c.status === 'pass' ? '\u2713' : c.status === 'fail' ? '\u2717' : '\u25CB'}
+                            </span>
+                            {c.label}
+                          </div>
+                        ))}
+                        <button
+                          className="instruct-test-btn"
+                          data-testid="test-wizard-run-events"
+                          onClick={wizard.runEventChecks}
+                        >
+                          run event tests
+                        </button>
+                      </div>
+                    )}
+                    {checks.length === 0 && (
+                      <div className="test-wizard-checks">
+                        <span className="test-wizard-checks-label">No verifications for this step</span>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
+              <div className="test-wizard-rive-section" data-testid="test-wizard-rive">
+                <span className="test-wizard-rive-label">rive file (future)</span>
+                <input
+                  className="test-wizard-rive-input"
+                  data-testid="test-wizard-rive-input"
+                  type="text"
+                  placeholder="https://example.com/file.riv"
+                  value={wizard.riveUrl}
+                  onChange={(e) => wizard.updateRiveUrl(e.target.value)}
+                  disabled
+                />
+              </div>
+            </div>
+            <div className="test-wizard-footer">
+              <div className="test-wizard-summary" data-testid="test-wizard-summary">
+                {wizard.passedChecks}/{wizard.totalChecks} passed
+              </div>
+              <div className="test-wizard-nav">
+                <button
+                  className="demo-btn"
+                  data-testid="test-wizard-prev"
+                  onClick={wizard.prevStep}
+                  disabled={wizard.stepIndex === 0}
+                >
+                  &larr; prev
+                </button>
+                <button
+                  className="demo-btn"
+                  data-testid="test-wizard-next"
+                  onClick={wizard.nextStep}
+                  disabled={wizard.stepIndex === app.instruct.length - 1}
+                >
+                  next &rarr;
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

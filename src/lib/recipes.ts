@@ -8,6 +8,7 @@ export interface RiveEvent {
 export interface InstructStep {
   step: string
   detail: string
+  verifies: string[]
 }
 
 export interface ReadoutItem {
@@ -62,13 +63,41 @@ export const recipes: Recipe[] = [
       { name: 'onStateChange', direction: 'out', type: 'Rive Event', description: 'Fires on idle→loading→complete transitions' },
     ],
     instruct: [
-      { step: 'Create ViewModel', detail: 'Add a ViewModel named ProgressBarVM to the artboard' },
-      { step: 'Add Number property', detail: 'Create property progress (Number, Source→Target)' },
-      { step: 'Add Boolean property', detail: 'Create property isActive (Boolean, Source→Target)' },
-      { step: 'Add Triggers', detail: 'Create triggers start and reset (Source→Target)' },
-      { step: 'Create State Machine', detail: 'Name it ProgressBarSM with states: idle, loading, complete' },
-      { step: 'Wire transitions', detail: 'start trigger → idle→loading, reset trigger → any→idle' },
-      { step: 'Add Rive Events', detail: 'Fire onComplete when progress hits 100, onStateChange on state transitions' },
+      {
+        step: 'Create ViewModel',
+        detail: 'Add a ViewModel named ProgressBarVM to the artboard',
+        verifies: ['state:idle'],
+      },
+      {
+        step: 'Add Number property',
+        detail: 'Create property progress (Number, Source→Target)',
+        verifies: ['context.progress'],
+      },
+      {
+        step: 'Add Boolean property',
+        detail: 'Create property isActive (Boolean, Source→Target)',
+        verifies: ['context.isActive'],
+      },
+      {
+        step: 'Add Triggers',
+        detail: 'Create triggers start and reset (Source→Target)',
+        verifies: ['event:start', 'event:reset'],
+      },
+      {
+        step: 'Create State Machine',
+        detail: 'Name it ProgressBarSM with states: idle, loading, complete',
+        verifies: ['state:idle', 'state:loading', 'state:complete'],
+      },
+      {
+        step: 'Wire transitions',
+        detail: 'start trigger → idle→loading, reset trigger → any→idle',
+        verifies: ['event:start->loading', 'event:reset->idle'],
+      },
+      {
+        step: 'Add Rive Events',
+        detail: 'Fire onComplete when progress hits 100, onStateChange on state transitions',
+        verifies: ['event:complete->complete'],
+      },
     ],
     readout: [
       { label: 'state', source: 'state' },
@@ -100,11 +129,31 @@ export const recipes: Recipe[] = [
       { name: 'onToggled', direction: 'out', type: 'Rive Event', description: 'Fires after the toggle animation completes' },
     ],
     instruct: [
-      { step: 'Create ViewModel', detail: 'Add a ViewModel named ToggleSwitchVM to the artboard' },
-      { step: 'Add Boolean property', detail: 'Create property isOn (Boolean, Source→Target)' },
-      { step: 'Add Trigger', detail: 'Create trigger toggle (Source→Target)' },
-      { step: 'Create State Machine', detail: 'Name it ToggleSwitchSM with states: on, off' },
-      { step: 'Add Rive Event', detail: 'Fire onToggled after toggle animation completes' },
+      {
+        step: 'Create ViewModel',
+        detail: 'Add a ViewModel named ToggleSwitchVM to the artboard',
+        verifies: ['state:off'],
+      },
+      {
+        step: 'Add Boolean property',
+        detail: 'Create property isOn (Boolean, Source→Target)',
+        verifies: ['context.isActive'],
+      },
+      {
+        step: 'Add Trigger',
+        detail: 'Create trigger toggle (Source→Target)',
+        verifies: ['event:toggle'],
+      },
+      {
+        step: 'Create State Machine',
+        detail: 'Name it ToggleSwitchSM with states: on, off',
+        verifies: ['state:off', 'state:on'],
+      },
+      {
+        step: 'Add Rive Event',
+        detail: 'Fire onToggled after toggle animation completes',
+        verifies: ['event:toggle->on'],
+      },
     ],
     readout: [
       { label: 'state', source: 'state' },
@@ -140,13 +189,41 @@ export const recipes: Recipe[] = [
       { name: 'onStateChange', direction: 'out', type: 'Rive Event', description: 'Fires on idle→counting→maxed transitions' },
     ],
     instruct: [
-      { step: 'Create ViewModel', detail: 'Add a ViewModel named CounterVM to the artboard' },
-      { step: 'Add Number property', detail: 'Create property count (Number, Source→Target)' },
-      { step: 'Add Boolean property', detail: 'Create property isActive (Boolean, Source→Target)' },
-      { step: 'Add Triggers', detail: 'Create triggers increment and reset (Source→Target)' },
-      { step: 'Create State Machine', detail: 'Name it CounterSM with states: idle, counting, maxed' },
-      { step: 'Wire transitions', detail: 'increment trigger → idle→counting, reset trigger → any→idle, auto-transition counting→maxed at count=10' },
-      { step: 'Add Rive Events', detail: 'Fire onMaxed when count reaches max, onStateChange on state transitions' },
+      {
+        step: 'Create ViewModel',
+        detail: 'Add a ViewModel named CounterVM to the artboard',
+        verifies: ['state:idle'],
+      },
+      {
+        step: 'Add Number property',
+        detail: 'Create property count (Number, Source→Target)',
+        verifies: ['context.count'],
+      },
+      {
+        step: 'Add Boolean property',
+        detail: 'Create property isActive (Boolean, Source→Target)',
+        verifies: [],
+      },
+      {
+        step: 'Add Triggers',
+        detail: 'Create triggers increment and reset (Source→Target)',
+        verifies: ['event:increment', 'event:reset'],
+      },
+      {
+        step: 'Create State Machine',
+        detail: 'Name it CounterSM with states: idle, counting, maxed',
+        verifies: ['state:idle', 'state:counting', 'state:maxed'],
+      },
+      {
+        step: 'Wire transitions',
+        detail: 'increment trigger → idle→counting, reset trigger → any→idle, auto-transition counting→maxed at count=10',
+        verifies: ['event:increment->counting', 'event:reset->idle'],
+      },
+      {
+        step: 'Add Rive Events',
+        detail: 'Fire onMaxed when count reaches max, onStateChange on state transitions',
+        verifies: [],
+      },
     ],
     readout: [
       { label: 'state', source: 'state' },
@@ -190,14 +267,46 @@ export const recipes: Recipe[] = [
       { name: 'onPlaybackEnd', direction: 'out', type: 'Rive Event', description: 'Fires when media reaches the end' },
     ],
     instruct: [
-      { step: 'Create ViewModel', detail: 'Add a ViewModel named MediaPlayerVM to the artboard' },
-      { step: 'Add playback properties', detail: 'Create currentTime (Number) and isPlaying (Boolean) properties' },
-      { step: 'Add volume properties', detail: 'Create volumeLevel (Number) and isMuted (Boolean) properties' },
-      { step: 'Add playback triggers', detail: 'Create triggers play, pause, stop' },
-      { step: 'Add volume triggers', detail: 'Create triggers mute and unmute' },
-      { step: 'Create State Machine', detail: 'Name it MediaPlayerSM with parallel regions: playback (stopped/playing/paused) and volume (unmuted/muted)' },
-      { step: 'Wire transitions', detail: 'play → stopped→playing, pause → playing→paused, stop → any→stopped, mute → unmuted→muted, unmute → muted→unmuted' },
-      { step: 'Add Rive Events', detail: 'Fire onPlaybackEnd when currentTime reaches duration' },
+      {
+        step: 'Create ViewModel',
+        detail: 'Add a ViewModel named MediaPlayerVM to the artboard',
+        verifies: [],
+      },
+      {
+        step: 'Add playback properties',
+        detail: 'Create currentTime (Number) and isPlaying (Boolean) properties',
+        verifies: ['context.currentTime', 'context.isPlaying'],
+      },
+      {
+        step: 'Add volume properties',
+        detail: 'Create volumeLevel (Number) and isMuted (Boolean) properties',
+        verifies: ['context.volumeLevel', 'context.isMuted'],
+      },
+      {
+        step: 'Add playback triggers',
+        detail: 'Create triggers play, pause, stop',
+        verifies: ['event:play', 'event:pause', 'event:stop'],
+      },
+      {
+        step: 'Add volume triggers',
+        detail: 'Create triggers mute and unmute',
+        verifies: ['event:mute', 'event:unmute'],
+      },
+      {
+        step: 'Create State Machine',
+        detail: 'Name it MediaPlayerSM with parallel regions: playback (stopped/playing/paused) and volume (unmuted/muted)',
+        verifies: [],
+      },
+      {
+        step: 'Wire transitions',
+        detail: 'play → stopped→playing, pause → playing→paused, stop → any→stopped, mute → unmuted→muted, unmute → muted→unmuted',
+        verifies: [],
+      },
+      {
+        step: 'Add Rive Events',
+        detail: 'Fire onPlaybackEnd when currentTime reaches duration',
+        verifies: [],
+      },
     ],
     readout: [
       { label: 'state', source: 'state' },
