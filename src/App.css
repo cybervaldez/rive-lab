@@ -790,6 +790,9 @@ html, body {
   gap: var(--space-1);
   padding-left: var(--space-8);
   position: relative;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-fast) var(--ease-out);
 }
 
 .instruct-step::before {
@@ -805,11 +808,39 @@ html, body {
   text-align: right;
 }
 
+/* Hover: show checkmark instead of number, underline title */
+.instruct-step:hover::before {
+  content: '\2713';
+}
+
+.instruct-step:hover .instruct-step-title {
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+  text-underline-offset: 3px;
+}
+
+/* Checked: permanent checkmark, strikethrough title, dimmed */
+.instruct-step--checked::before {
+  content: '\2713' !important;
+  color: var(--color-text-tertiary);
+}
+
+.instruct-step--checked .instruct-step-title {
+  text-decoration: line-through;
+  text-decoration-color: var(--color-text-tertiary);
+  color: var(--color-text-tertiary);
+}
+
+.instruct-step--checked .instruct-step-detail {
+  color: var(--color-text-whisper);
+}
+
 .instruct-step-title {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--color-text);
   letter-spacing: var(--tracking-wide);
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
 .instruct-step-detail {
@@ -817,6 +848,16 @@ html, body {
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
   letter-spacing: var(--tracking-wide);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.instruct-hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-whisper);
+  margin-top: var(--space-6);
+  text-align: center;
 }
 
 /* ================================================================

@@ -3,6 +3,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { getComponents, DEFAULT_RECIPE_KEY } from '../../lib/recipes'
 import { useTheme } from '../../lib/useTheme'
 import { usePinned } from '../../lib/usePinned'
+import { useChecklist } from '../../lib/useChecklist'
 import { ProgressBarDemo } from '../../components/ProgressBarDemo'
 import { ToggleSwitchDemo } from '../../components/ToggleSwitchDemo'
 import { CounterDemo } from '../../components/CounterDemo'
@@ -25,6 +26,7 @@ function RecipePage() {
 
   const [theme, toggleTheme] = useTheme()
   const [isPinned, togglePinned] = usePinned()
+  const [checkedSteps, toggleStep] = useChecklist(recipeKey)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [openPanel, setOpenPanel] = useState<'instruct' | 'contract' | 'events' | null>(() =>
     isPinned ? 'instruct' : null,
@@ -315,12 +317,20 @@ function RecipePage() {
                 <div className="instruct-panel" data-testid="instruct-panel">
                   <ol className="instruct-list" data-testid="instruct-list">
                     {recipe.instruct.map((item, i) => (
-                      <li key={i} className="instruct-step" data-testid={`instruct-step-${i}`}>
+                      <li
+                        key={i}
+                        className={`instruct-step${checkedSteps.has(i) ? ' instruct-step--checked' : ''}`}
+                        data-testid={`instruct-step-${i}`}
+                        onClick={() => toggleStep(i)}
+                      >
                         <span className="instruct-step-title">{item.step}</span>
                         <span className="instruct-step-detail">{item.detail}</span>
                       </li>
                     ))}
                   </ol>
+                  <p className="instruct-hint" data-testid="instruct-hint">
+                    Click on an item to mark it as complete
+                  </p>
                 </div>
               )}
               {displayPanel === 'contract' && (
