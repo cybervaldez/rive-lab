@@ -125,6 +125,16 @@ This is the core convention — how XState must be structured to mirror Rive:
 | `onTrigger` callback (Rive->JS) | `inspect` event or action side-effect | Receive trigger |
 | State machine state | Machine state node | Same name |
 | `onStateChange` | `actor.subscribe()` on `.value` | State observation |
+| Layer (concurrent state) | Parallel region (`type: 'parallel'`) | One layer = one region, same name |
+| Shared ViewModel (across layers) | Shared context (across regions) | All regions read/write same context |
+| Layer active state | Region current state | Each region has exactly one active state |
+| Layer priority (rightmost wins) | *(no equivalent)* | Rive-only: animation blending conflict resolution |
+| *(no equivalent)* | `onDone` (all regions reach final) | XState-only: parallel completion event |
+| TransitionViewModelCondition | Context guard (`({ context }) => ...`) | Cross-region/layer queries via shared property values |
+| *(no equivalent)* | `stateIn()` guard | XState-only: check if a region is in a named state |
+| Shared ViewModel property write | Shared context update via `assign()` | Cross-region/layer communication via shared state |
+| *(no equivalent)* | `raise()` event | XState-only: one region raises an event for all regions |
+| Multi-layer active states | Composite state value (object) | `{ playback: 'playing', volume: 'muted' }` |
 
 ---
 
@@ -185,6 +195,231 @@ export const progressBarMachine = setup({
   },
 });
 ```
+
+---
+
+## Parallel States (Concurrent Regions)
+
+Parallel states model genuinely independent concerns that run simultaneously. Each parallel region has its own set of states and transitions, but all regions share the same context and receive the same events.
+
+Each region maps to one Rive layer — see `techs/rive/README.md` Layers section.
+
+### When to Use
+
+Use `type: 'parallel'` when you have **orthogonal concerns** — behaviors that:
+- Can change independently (playback can toggle without affecting volume)
+- Don't gate each other (muting doesn't pause playback)
+- Together describe the full state (you need both playback AND volume to describe the player)
+
+If concerns are dependent (auth gates profile access), use compound (nested) states instead — see Anti-Pattern #7.
+
+### State Value
+
+Parallel machines produce an **object** state value instead of a string:
+
+```typescript
+// Flat machine:
+snapshot.value // => 'playing' (string)
+
+// Parallel machine:
+snapshot.value // => { playback: 'playing', volume: 'muted' } (object)
+```
+
+### Shared Context
+
+All regions read and write the **same context** — this maps directly to Rive's shared ViewModel where all layers access the same property pool:
+
+```typescript
+context: {
+  // playback region properties   <- Maps to playback layer properties
+  currentTime: 0,
+  duration: 0,
+  isPlaying: false,
+  // volume region properties     <- Maps to volume layer properties
+  volumeLevel: 100,
+  isMuted: false,
+}
+```
+
+### Event Broadcasting
+
+All regions receive **every event**. When you send `{ type: 'mute' }`, both the `playback` and `volume` regions evaluate it — only the region with a matching handler transitions. This mirrors Rive where all layers evaluate conditions simultaneously.
+
+### Cross-Region Communication
+
+| Mechanism | How | Use Case |
+|-----------|-----|----------|
+| Shared context | Both regions read/write same context via `assign()` | Region A updates a value that region B's guard checks |
+| `raise()` | Action in one region raises an event all regions receive | Region A triggers a transition in region B |
+| Context guard | Guard checks a shared context value set by another region | Conditional transition based on sibling region's property (maps to Rive TransitionViewModelCondition) |
+| `stateIn()` guard | Guard checks if another region is in a specific state | XState-only: no direct Rive equivalent since layers query properties, not state names |
+
+**`raise()` example** — in a file-processing machine, the `upload` region notifies `alerts` when complete:
+
+```typescript
+// In setup():
+actions: {
+  notifyUploadDone: raise({ type: 'showAlert' }), // all regions receive this
+},
+
+// In upload region:
+complete: {
+  type: 'final',
+  entry: [
+    assign({ uploadComplete: true }),
+    'notifyUploadDone',  // raises 'showAlert' → alerts region transitions to visible
+  ],
+}
+```
+
+**Context guard example** — `alerts` region auto-dismisses only after upload finishes:
+
+```typescript
+// In setup():
+guards: {
+  isUploadComplete: ({ context }) => context.uploadComplete === true,
+},
+
+// In alerts region:
+visible: {
+  on: {
+    dismiss: { target: 'hidden', guard: 'isUploadComplete' },
+  },
+}
+```
+
+### `onDone` — Parallel Completion
+
+When **all** regions reach a `type: 'final'` state, the parallel parent fires `onDone`. This is XState-only — Rive has no equivalent since layers run indefinitely.
+
+```typescript
+states: {
+  active: {
+    type: 'parallel',
+    states: {
+      upload: { /* ... has a 'done' final state */ },
+      process: { /* ... has a 'done' final state */ },
+    },
+    onDone: 'complete', // fires when BOTH upload and process reach final
+  },
+  complete: {},
+}
+```
+
+### Media Player Machine
+
+```typescript
+// src/machines/mediaPlayer.ts
+import { setup, assign } from 'xstate';
+
+// Context properties MUST match Rive MediaPlayerVM properties (same names, types)
+// Events for triggers MUST match Rive trigger names
+// Region keys MUST match Rive layer names
+export const mediaPlayerMachine = setup({
+  types: {
+    context: {} as {
+      // <- Maps to MediaPlayerVM properties (shared across layers)
+      currentTime: number;
+      duration: number;
+      isPlaying: boolean;
+      volumeLevel: number;
+      isMuted: boolean;
+    },
+    events: {} as
+      // <- Maps to MediaPlayerVM triggers
+      | { type: 'play' }
+      | { type: 'pause' }
+      | { type: 'stop' }
+      | { type: 'mute' }
+      | { type: 'unmute' }
+      // <- Maps to JS->Rive property writes
+      | { type: 'SET_CURRENT_TIME'; value: number }
+      | { type: 'SET_VOLUME_LEVEL'; value: number },
+  },
+}).createMachine({
+  id: 'MediaPlayerSM',           // <- Matches Rive state machine name
+  type: 'parallel',              // <- Enables concurrent regions
+  context: {
+    currentTime: 0,
+    duration: 0,
+    isPlaying: false,
+    volumeLevel: 100,
+    isMuted: false,
+  },
+  states: {
+    playback: {                   // <- Maps to Rive layer: playback
+      initial: 'stopped',
+      states: {
+        stopped: {
+          entry: assign({ isPlaying: false, currentTime: 0 }),
+          on: {
+            play: { target: 'playing' },
+          },
+        },
+        playing: {
+          entry: assign({ isPlaying: true }),
+          on: {
+            pause: { target: 'paused' },
+            stop: { target: 'stopped' },
+            SET_CURRENT_TIME: {
+              actions: assign({ currentTime: ({ event }) => event.value }),
+            },
+          },
+        },
+        paused: {
+          entry: assign({ isPlaying: false }),
+          on: {
+            play: { target: 'playing' },
+            stop: { target: 'stopped' },
+          },
+        },
+      },
+    },
+    volume: {                     // <- Maps to Rive layer: volume
+      initial: 'unmuted',
+      states: {
+        unmuted: {
+          on: {
+            mute: { target: 'muted' },
+            SET_VOLUME_LEVEL: {
+              actions: assign({ volumeLevel: ({ event }) => event.value }),
+            },
+          },
+        },
+        muted: {
+          entry: assign({ isMuted: true, volumeLevel: 0 }),
+          on: {
+            unmute: { target: 'unmuted', actions: assign({ isMuted: false, volumeLevel: 100 }) },
+          },
+        },
+      },
+    },
+  },
+});
+```
+
+### Pipeline Exposure
+
+For parallel machines, `window.__xstate__` returns an **object** for state. Use dot notation to query individual regions:
+
+```typescript
+window.__xstate__?.MediaPlayer?.state()
+// => { playback: 'playing', volume: 'muted' }
+
+// Access individual region directly:
+window.__xstate__?.MediaPlayer?.state().playback
+// => 'playing'
+```
+
+### Logging
+
+Parallel state emission logs as JSON instead of a string:
+
+```
+[XSTATE:MediaPlayerSM] → state: {"playback":"playing","volume":"muted"}
+```
+
+The `inspect` handler must check `typeof value` and call `JSON.stringify()` when the value is an object — template literals produce `[object Object]` otherwise. See the inspect code in the Round-Trip Logging section.
 
 ---
 
@@ -255,6 +490,7 @@ All log lines follow the same structure:
 | 3 (XState emits) | XSTATE | `[XSTATE:{machineId}] → state: {value}` | `[XSTATE:ProgressBarSM] → state: loading` |
 | 4 (UI receives) | UI | `[UI:{comp}] ← recv: state={value}` | `[UI:ProgressBar] ← recv: state=loading` |
 | 4 (Rive receives) | RIVE | `[RIVE:{id}] ← bind: {prop}={value}` | `[RIVE:ProgressBar] ← bind: isActive=true` |
+| 3 (parallel state) | XSTATE | `[XSTATE:{machineId}] → state: {json}` | `[XSTATE:MediaPlayerSM] → state: {"playback":"playing","volume":"muted"}` |
 
 ### Point 1: Send-Site Logging
 
@@ -294,7 +530,9 @@ const actor = createActor(machine, {
       console.log(`[XSTATE:${machine.id}] ← event: ${JSON.stringify(event.event)}`);
     }
     if (event.type === '@xstate.snapshot') {
-      console.log(`[XSTATE:${machine.id}] → state: ${event.snapshot.value}`);
+      const value = event.snapshot.value;
+      const display = typeof value === 'string' ? value : JSON.stringify(value);
+      console.log(`[XSTATE:${machine.id}] → state: ${display}`);
     }
   },
 });
@@ -415,6 +653,28 @@ STATE=$(agent-browser eval "window.__xstate__?.ProgressBar?.state()")
 # STATE=$(agent-browser eval "window.__rive_debug__?.ProgressBar?.state()")
 ```
 
+### Parallel State Queries
+
+```bash
+# Read composite state as JSON
+STATE=$(agent-browser eval "JSON.stringify(window.__xstate__?.MediaPlayer?.state())")
+echo "$STATE"  # => {"playback":"playing","volume":"muted"}
+
+# Read single region directly
+PLAYBACK=$(agent-browser eval "window.__xstate__?.MediaPlayer?.state().playback")
+[ "$PLAYBACK" = "\"playing\"" ] && log_pass "Playback: playing" || log_fail "Playback: $PLAYBACK"
+
+# Verify two regions independently
+VOLUME=$(agent-browser eval "window.__xstate__?.MediaPlayer?.state().volume")
+[ "$VOLUME" = "\"muted\"" ] && log_pass "Volume: muted" || log_fail "Volume: $VOLUME"
+
+# Fire event affecting one region
+agent-browser eval "window.__xstate__?.MediaPlayer?.send({ type: 'mute' })"
+sleep 0.5
+VOLUME=$(agent-browser eval "window.__xstate__?.MediaPlayer?.state().volume")
+[ "$VOLUME" = "\"muted\"" ] && log_pass "Muted" || log_fail "Volume: $VOLUME"
+```
+
 ---
 
 ## Anti-Patterns (coding-guard)
@@ -515,6 +775,35 @@ function MyComponent() {
 }
 ```
 
+### 7. Unnecessary Parallel States
+
+```typescript
+// BAD — auth and profile are dependent (profile requires auth)
+states: {
+  type: 'parallel',
+  states: {
+    auth: { /* logged_out, logged_in */ },
+    profile: { /* empty, loaded */ },
+  },
+}
+
+// GOOD — use compound states for dependent concerns
+states: {
+  logged_out: {
+    on: { login: 'logged_in' },
+  },
+  logged_in: {
+    initial: 'profileEmpty',
+    states: {
+      profileEmpty: { on: { loadProfile: 'profileLoaded' } },
+      profileLoaded: {},
+    },
+  },
+}
+```
+
+**Rule**: Use parallel states only when regions are genuinely independent. If region B can only be active when region A is in a specific state, they are dependent — use compound (nested) states.
+
 ---
 
 ## Resources
@@ -523,4 +812,5 @@ function MyComponent() {
 - XState React: https://stately.ai/docs/xstate-react
 - Actors: https://stately.ai/docs/actors
 - Setup API: https://stately.ai/docs/setup
+- Parallel States: https://stately.ai/docs/parallel-states
 - GitHub: https://github.com/statelyai/xstate
