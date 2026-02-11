@@ -130,14 +130,14 @@ function RecipePage() {
         </button>
       </nav>
 
-      {/* Right-edge panel toggle */}
+      {/* Right-edge instructions toggle */}
       <nav className="top-right-nav" data-testid="right-nav">
         <button
           className={`top-right-nav-link${openPanel !== null ? ' active' : ''}`}
           data-testid="tab-panel"
           onClick={() => setOpenPanel((prev) => (prev !== null ? null : 'instruct'))}
         >
-          panel
+          instructions
         </button>
       </nav>
 
@@ -266,12 +266,16 @@ function RecipePage() {
         </aside>
 
         {/* Theater Area */}
-        <main className="theater-area" data-testid="theater-area">
-          <div className="theater-content">
-            <div className="stage" data-testid="stage">
+        <main
+          className="theater-area"
+          data-testid="theater-area"
+          onClick={(e) => { if (showDocs && e.target === e.currentTarget) setShowDocs(false) }}
+        >
+          <div className={`theater-content${showDocs ? ' theater-content--docs' : ''}`}>
+            <div className={`stage${showDocs ? ' stage--docs' : ''}`} data-testid="stage">
               <div className="stage-body" data-testid="stage-body-demo">
                 {showDocs ? (
-                  <MachineDoc data={machineDocData} stateValue={stateValue} />
+                  <MachineDoc data={machineDocData} stateValue={stateValue} onClose={() => setShowDocs(false)} />
                 ) : (
                   <div className="stage-live" data-testid="stage-live">
                     {recipeKey === 'progress-bar' && <ProgressBarDemo {...demoProps} />}

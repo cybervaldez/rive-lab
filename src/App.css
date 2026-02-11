@@ -480,6 +480,10 @@ html, body {
   align-items: center;
 }
 
+.theater-content--docs {
+  max-width: 720px;
+}
+
 .theater-area--panel-pinned {
   justify-content: center;
   gap: var(--space-4);
@@ -508,12 +512,21 @@ html, body {
   flex-direction: column;
 }
 
+.stage--docs {
+  max-width: 720px;
+}
+
 .stage-body {
   flex: 1;
   padding: var(--space-12);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.stage--docs .stage-body {
+  padding: var(--space-4);
+  align-items: flex-start;
 }
 
 .stage-live {
@@ -680,6 +693,14 @@ html, body {
   border-color: var(--color-accent);
   background: var(--color-accent-dim);
 }
+.topbar-docs-pill.disabled,
+.topbar-docs-pill:disabled {
+  color: var(--color-text-whisper);
+  border-color: var(--color-border-subtle);
+  background: transparent;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 
 /* ================================================================
    MACHINE DOC — Terminal-style documentation
@@ -687,6 +708,7 @@ html, body {
 .machine-doc {
   width: 100%;
   max-width: 720px;
+  margin: var(--space-6) 0;
   --md-color-type-number: var(--green-400);
   --md-color-type-string: var(--amber-400);
   --md-color-type-boolean: var(--blue-400);
@@ -718,6 +740,9 @@ html, body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
 }
 
 .machine-doc-titlebar {
@@ -729,22 +754,30 @@ html, body {
   border-bottom: 1px solid var(--color-border);
 }
 
-.machine-doc-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--md-color-text-whisper);
+.machine-doc-close {
+  background: none;
+  border: none;
+  font-size: var(--text-lg);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  line-height: 1;
+  transition: color var(--duration-fast) var(--ease-out);
+  flex-shrink: 0;
 }
-.machine-doc-dot:nth-child(1) { background: var(--red-400); opacity: 0.6; }
-.machine-doc-dot:nth-child(2) { background: var(--amber-400); opacity: 0.6; }
-.machine-doc-dot:nth-child(3) { background: var(--color-accent); opacity: 0.6; }
+.machine-doc-close:hover {
+  color: var(--color-text);
+}
 
 .machine-doc-title {
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   color: var(--md-color-text-whisper);
-  margin-left: var(--space-2);
   letter-spacing: var(--tracking-wide);
+}
+
+.machine-doc-title-id {
+  color: var(--color-accent);
 }
 
 .machine-doc-body {
@@ -752,20 +785,12 @@ html, body {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   line-height: var(--leading-relaxed);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 /* Terminal output elements */
-.machine-doc .t-prompt {
-  color: var(--md-color-prompt);
-  margin-bottom: var(--space-4);
-}
-.machine-doc .t-prompt .t-cmd {
-  color: var(--md-color-text);
-}
-.machine-doc .t-prompt .t-arg {
-  color: var(--color-accent);
-}
-
 .machine-doc .t-section-header {
   color: var(--color-accent);
   margin-top: var(--space-4);
@@ -902,22 +927,23 @@ html, body {
   color: var(--md-color-text-tertiary);
 }
 
-/* Blinking cursor */
-.machine-doc .t-cursor-line {
-  margin-top: var(--space-4);
+/* Custom scrollbar */
+.machine-doc-body::-webkit-scrollbar {
+  width: 6px;
 }
-.machine-doc .t-cursor-prompt {
-  color: var(--md-color-prompt);
+.machine-doc-body::-webkit-scrollbar-track {
+  background: transparent;
 }
-.machine-doc .t-cursor {
-  display: inline-block;
-  width: 7px;
-  height: 14px;
-  background: var(--color-accent);
-  opacity: 0.8;
-  animation: blink 1s step-end infinite;
-  vertical-align: middle;
-  margin-left: 2px;
+.machine-doc-body::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+.machine-doc-body::-webkit-scrollbar-thumb:hover {
+  background: var(--md-color-text-whisper);
+}
+.machine-doc-body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
 }
 
 /* Machine doc responsive */

@@ -3,9 +3,10 @@ import type { MachineDocData } from '../lib/extractMachineDoc'
 interface MachineDocProps {
   data: MachineDocData
   stateValue: string
+  onClose?: () => void
 }
 
-export function MachineDoc({ data, stateValue }: MachineDocProps) {
+export function MachineDoc({ data, stateValue, onClose }: MachineDocProps) {
   // Group transitions by source state
   const transitionGroups: Record<string, MachineDocData['transitions']> = {}
   for (const t of data.transitions) {
@@ -17,19 +18,20 @@ export function MachineDoc({ data, stateValue }: MachineDocProps) {
     <div className="machine-doc" data-testid="machine-doc">
       <div className="machine-doc-window" data-testid="machine-doc-window">
         <div className="machine-doc-titlebar">
-          <span className="machine-doc-dot" />
-          <span className="machine-doc-dot" />
-          <span className="machine-doc-dot" />
-          <span className="machine-doc-title">machine.describe</span>
+          <button
+            className="machine-doc-close"
+            data-testid="machine-doc-close"
+            onClick={onClose}
+            aria-label="Close docs"
+          >
+            &times;
+          </button>
+          <span className="machine-doc-title">
+            machine.describe(<span className="machine-doc-title-id">{data.id}</span>)
+          </span>
         </div>
 
         <div className="machine-doc-body" data-testid="machine-doc-body">
-          {/* Prompt */}
-          <div className="t-prompt" data-testid="terminal-prompt">
-            <span>$ </span>
-            <span className="t-cmd">machine.describe</span>(<span className="t-arg">{data.id}</span>)
-          </div>
-
           {/* Meta */}
           <div className="t-section-header" data-testid="section-meta">&gt; Meta</div>
           <div className="t-line">
@@ -106,12 +108,6 @@ export function MachineDoc({ data, stateValue }: MachineDocProps) {
               ))}
             </div>
           ))}
-
-          {/* Trailing cursor */}
-          <div className="t-cursor-line">
-            <span className="t-cursor-prompt">$ </span>
-            <span className="t-cursor" />
-          </div>
         </div>
       </div>
     </div>

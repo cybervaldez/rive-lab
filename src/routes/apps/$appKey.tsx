@@ -52,14 +52,14 @@ function AppDetailPage() {
 
   return (
     <div className="app-theater" data-testid="app-theater">
-      {/* Floating right-edge panel toggle */}
+      {/* Floating right-edge instructions toggle */}
       <nav className="top-right-nav" data-testid="right-nav">
         <button
           className={`top-right-nav-link${openPanel !== null ? ' active' : ''}`}
           data-testid="tab-panel"
           onClick={() => setOpenPanel((prev) => (prev !== null ? null : 'instruct'))}
         >
-          panel
+          instructions
         </button>
       </nav>
 
@@ -70,6 +70,13 @@ function AppDetailPage() {
         </Link>
         <span className="app-topbar-name" data-testid="app-name">
           {app.name}
+          <button
+            className="topbar-docs-pill disabled"
+            data-testid="topbar-docs"
+            disabled
+          >
+            docs
+          </button>
           <span className="app-topbar-state" data-testid="app-state">{machineState}</span>
         </span>
         <button
