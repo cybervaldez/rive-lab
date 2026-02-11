@@ -283,11 +283,59 @@ Naming conventions the Rive developer must follow to match XState machine struct
 
 ---
 
+## Machine Self-Documentation for Handoff
+
+XState machines now carry structured metadata that tells the Rive designer exactly what to build — no separate spec document needed.
+
+### `meta` Block
+
+Every machine definition includes a root `meta` object with two fields critical to the Rive side:
+
+- **`riveViewModel`** — the exact name to use for the ViewModel in the Rive Editor (e.g., `ProgressBarVM`)
+- **`riveStateMachine`** — the exact name to use for the State Machine in the Rive Editor (e.g., `ProgressBarSM`)
+
+The designer opens the machine file, reads these two strings, and creates the matching ViewModel and State Machine in Rive with those exact names.
+
+### `contextProperties`
+
+The `meta.contextProperties` object lists every context property with its type and Rive mapping:
+
+```typescript
+contextProperties: {
+  progress: {
+    type: 'number',
+    range: [0, 100],
+    description: 'Maps to Rive Number property "progress".',
+  },
+  isActive: {
+    type: 'boolean',
+    description: 'Maps to Rive Boolean property "isActive".',
+  },
+}
+```
+
+The designer creates a matching ViewModel property for each entry — same name, same type. The `description` explains how the property is used, and `range` (when present) defines valid bounds.
+
+### State and Transition Descriptions
+
+Every state node and transition includes a human-readable `description` string. The designer references these when building states and transitions in the Rive Editor to verify that the Rive implementation matches the intended behavior.
+
+### Universal `reset`
+
+Every state in every machine handles `{ type: 'reset' }` back to the initial state. On the Rive side, this means: **wire a `reset` trigger from every Rive state back to the initial state**. This ensures the pipeline can always return to a clean starting point, and the wizard can reset demos reproducibly.
+
+For the full XState-side convention, see `techs/xstate/rive-wiring-conventions.md`.
+
+---
+
 ## Handoff Checklist
 
 What the Rive developer needs to implement to match the XState spec:
 
 ```
+[ ] Machine meta block reviewed — confirm ViewModel name and StateMachine name match
+[ ] Every state has a description — used to verify Rive states match intent
+[ ] Universal reset wired — reset trigger from every state back to initial
 [ ] ViewModel named {ComponentName}VM
 [ ] Every XState context property exists as a ViewModel property (same name, same type)
 [ ] Every XState event that maps to a trigger exists as a ViewModel trigger (same name)

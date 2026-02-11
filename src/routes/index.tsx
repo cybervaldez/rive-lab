@@ -31,10 +31,20 @@ function Homepage() {
       <section className="homepage-section" data-testid="homepage-about">
         <h2 className="homepage-section-title">What is rive-lab?</h2>
         <p className="homepage-section-text">
-          Every animation starts as an XState machine — states, events, and context
-          are defined first, then handed to Rive as a ViewModel contract. The state
-          machine becomes the single source of truth: a living specification that
-          both developers and designers can execute.
+          Every animation starts as an XState machine that <strong>self-documents</strong>.
+          Each machine carries a <code>meta</code> block describing its context properties,
+          ViewModel name, and state machine name — everything the Rive designer needs to
+          know, embedded in the code itself.
+        </p>
+        <p className="homepage-section-text">
+          States and transitions carry human-readable <code>description</code> fields
+          that AI tools and designers can parse. Every state handles a
+          universal <code>reset</code> event, so the wizard and pipeline can always
+          return to a known starting point.
+        </p>
+        <p className="homepage-section-text">
+          The machine <em>is</em> the spec. A Rive designer reads the meta, matches
+          names exactly, and the swap is seamless — no separate handoff doc required.
         </p>
       </section>
 

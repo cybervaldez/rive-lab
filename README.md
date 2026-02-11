@@ -43,6 +43,27 @@ XState app is the fallback.
 | `actor.getSnapshot()`   | `vm.property.value`       |
 | `inspect` + `subscribe` | Console log handshake     |
 
+### Machine Conventions
+
+Every machine self-documents via `meta` and `description` fields so AI tools can parse structure and Rive designers can read the spec directly from code.
+
+**Root `meta` block** — embedded in every machine definition:
+
+```typescript
+meta: {
+  description: 'Drives a progress bar from idle through loading to complete.',
+  contextProperties: {
+    progress: { type: 'number', range: [0, 100], description: 'Maps to Rive Number property "progress".' },
+    statusText: { type: 'string', description: 'Human-readable status label for the current state.' },
+    isActive: { type: 'boolean', description: 'Maps to Rive Boolean property "isActive".' },
+  },
+  riveViewModel: 'ProgressBarVM',
+  riveStateMachine: 'ProgressBarSM',
+}
+```
+
+Every state node and transition carries a `description` string that documents its purpose. Every state handles `{ type: 'reset' }` targeting the initial state — this enables reproducible testing and pipeline resets from any point in the flow.
+
 ## Who Is This For
 
 - **Developers using Rive** who need testable, observable animations — not just visual checks
@@ -84,6 +105,7 @@ rive-lab/
 
 - techs/rive/README.md — Rive Data Binding protocol, sender/receiver logging, handoff checklist
 - techs/xstate/README.md — XState machine patterns, round-trip logging convention, diagnosis table
+- techs/xstate/rive-wiring-conventions.md — Rive wiring conventions, naming, handoff checklist
 - .claude/skills/SKILL_INDEX.md — Full pipeline reference
 
 ## Part of the Cybervaldez Playbook

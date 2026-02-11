@@ -198,6 +198,90 @@ export const progressBarMachine = setup({
 
 ---
 
+## Machine Self-Documentation
+
+AI tools need to parse machine structure programmatically; Rive designers need clear handoff specs without reading implementation details. Every machine embeds structured metadata that serves both audiences.
+
+### Root `meta` Block
+
+Every machine definition includes a root `meta` object. Real example from `progressBarMachine`:
+
+```typescript
+meta: {
+  description: 'Drives a progress bar from idle through loading to complete.',
+  contextProperties: {
+    progress: {
+      type: 'number',
+      range: [0, 100],
+      description: 'Maps to Rive Number property "progress".',
+    },
+    statusText: {
+      type: 'string',
+      description: 'Human-readable status label for the current state.',
+    },
+    isActive: {
+      type: 'boolean',
+      description: 'Maps to Rive Boolean property "isActive".',
+    },
+  },
+  riveViewModel: 'ProgressBarVM',
+  riveStateMachine: 'ProgressBarSM',
+}
+```
+
+- `description` — one-line purpose of the machine
+- `contextProperties` — each property with its `type`, optional `range`, and `description` documenting its Rive mapping
+- `riveViewModel` — the exact ViewModel name the Rive designer must use
+- `riveStateMachine` — the exact State Machine name in the Rive Editor
+
+### State `description`
+
+Every state node gets a `description` string that documents its purpose and invariants:
+
+```typescript
+idle: {
+  description: 'Initial resting state — progress is 0, nothing animating.',
+  on: { ... }
+}
+```
+
+### Transition `description`
+
+Every transition gets a `description` string that explains what happens and why:
+
+```typescript
+start: {
+  description: 'Kick off the loading sequence.',
+  target: 'loading',
+  actions: assign({ ... }),
+}
+```
+
+### Universal `reset`
+
+Every state must handle `{ type: 'reset' }` targeting the initial state. This enables:
+
+- **Reproducible testing** — the wizard and pipeline can reset to a known starting point from any state
+- **Pipeline resets** — automated flows always have an escape hatch
+- **Rive wiring** — the designer wires a `reset` trigger from every Rive state back to the initial state
+
+```typescript
+loading: {
+  on: {
+    reset: {
+      description: 'Abort loading and return to idle.',
+      target: 'idle',
+      actions: assign({ progress: 0, isActive: false, statusText: '' }),
+    },
+    // ... other transitions
+  },
+}
+```
+
+For full naming conventions, trigger wiring, and handoff checklist, see `techs/xstate/rive-wiring-conventions.md`.
+
+---
+
 ## Parallel States (Concurrent Regions)
 
 Parallel states model genuinely independent concerns that run simultaneously. Each parallel region has its own set of states and transitions, but all regions share the same context and receive the same events.
