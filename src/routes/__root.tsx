@@ -40,6 +40,11 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
     <html lang="en" data-theme="dark">
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})()`,
+          }}
+        />
       </head>
       <body>
         {children}

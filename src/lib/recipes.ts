@@ -18,6 +18,7 @@ export interface ReadoutItem {
 export interface Recipe {
   key: string
   name: string
+  type: 'component' | 'app'
   state: string
   progress: number
   active: boolean
@@ -35,6 +36,7 @@ export const recipes: Recipe[] = [
   {
     key: 'progress-bar',
     name: 'PROGRESS BAR',
+    type: 'component',
     state: 'loading',
     progress: 65,
     active: true,
@@ -77,6 +79,7 @@ export const recipes: Recipe[] = [
   {
     key: 'toggle-switch',
     name: 'TOGGLE SWITCH',
+    type: 'component',
     state: 'off',
     progress: 0,
     active: false,
@@ -111,6 +114,7 @@ export const recipes: Recipe[] = [
   {
     key: 'counter',
     name: 'COUNTER',
+    type: 'component',
     state: 'idle',
     progress: 0,
     active: false,
@@ -150,6 +154,65 @@ export const recipes: Recipe[] = [
       { label: 'isActive', source: 'active' },
     ],
   },
+  {
+    key: 'media-player',
+    name: 'MEDIA PLAYER',
+    type: 'app',
+    state: 'stopped',
+    progress: 0,
+    active: false,
+    status: 'draft',
+    bindings: 10,
+    states: 5,
+    triggers: 5,
+    contract: [
+      { xstate: 'context.currentTime', rive: 'ViewModel property currentTime (Number)' },
+      { xstate: 'context.isPlaying', rive: 'ViewModel property isPlaying (Boolean)' },
+      { xstate: 'event: play', rive: 'Trigger play' },
+      { xstate: 'event: pause', rive: 'Trigger pause' },
+      { xstate: 'event: stop', rive: 'Trigger stop' },
+      { xstate: 'context.volumeLevel', rive: 'ViewModel property volumeLevel (Number)' },
+      { xstate: 'context.isMuted', rive: 'ViewModel property isMuted (Boolean)' },
+      { xstate: 'event: mute', rive: 'Trigger mute' },
+      { xstate: 'event: unmute', rive: 'Trigger unmute' },
+      { xstate: 'state: {playback: stopped}', rive: 'Layer playback → State: stopped' },
+    ],
+    events: [
+      { name: 'currentTime', direction: 'in', type: 'Number Input', description: 'Current playback position in seconds' },
+      { name: 'isPlaying', direction: 'in', type: 'Boolean Input', description: 'Whether media is currently playing' },
+      { name: 'play', direction: 'in', type: 'Trigger', description: 'Start playback' },
+      { name: 'pause', direction: 'in', type: 'Trigger', description: 'Pause playback' },
+      { name: 'stop', direction: 'in', type: 'Trigger', description: 'Stop and reset playback' },
+      { name: 'volumeLevel', direction: 'in', type: 'Number Input', description: 'Volume level 0–100' },
+      { name: 'isMuted', direction: 'in', type: 'Boolean Input', description: 'Whether audio is muted' },
+      { name: 'mute', direction: 'in', type: 'Trigger', description: 'Mute audio' },
+      { name: 'unmute', direction: 'in', type: 'Trigger', description: 'Unmute audio' },
+      { name: 'onPlaybackEnd', direction: 'out', type: 'Rive Event', description: 'Fires when media reaches the end' },
+    ],
+    instruct: [
+      { step: 'Create ViewModel', detail: 'Add a ViewModel named MediaPlayerVM to the artboard' },
+      { step: 'Add playback properties', detail: 'Create currentTime (Number) and isPlaying (Boolean) properties' },
+      { step: 'Add volume properties', detail: 'Create volumeLevel (Number) and isMuted (Boolean) properties' },
+      { step: 'Add playback triggers', detail: 'Create triggers play, pause, stop' },
+      { step: 'Add volume triggers', detail: 'Create triggers mute and unmute' },
+      { step: 'Create State Machine', detail: 'Name it MediaPlayerSM with parallel regions: playback (stopped/playing/paused) and volume (unmuted/muted)' },
+      { step: 'Wire transitions', detail: 'play → stopped→playing, pause → playing→paused, stop → any→stopped, mute → unmuted→muted, unmute → muted→unmuted' },
+      { step: 'Add Rive Events', detail: 'Fire onPlaybackEnd when currentTime reaches duration' },
+    ],
+    readout: [
+      { label: 'state', source: 'state' },
+      { label: 'currentTime', source: 'progress' },
+      { label: 'isPlaying', source: 'active' },
+    ],
+  },
 ]
 
 export const DEFAULT_RECIPE_KEY = 'progress-bar'
+
+export function getComponents(): Recipe[] {
+  return recipes.filter((r) => r.type === 'component')
+}
+
+export function getApps(): Recipe[] {
+  return recipes.filter((r) => r.type === 'app')
+}

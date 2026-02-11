@@ -11,6 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecipeKeyRouteImport } from './routes/$recipeKey'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ComponentsIndexRouteImport } from './routes/components/index'
+import { Route as AppsIndexRouteImport } from './routes/apps/index'
+import { Route as ComponentsRecipeKeyRouteImport } from './routes/components/$recipeKey'
+import { Route as AppsAppKeyRouteImport } from './routes/apps/$appKey'
 
 const RecipeKeyRoute = RecipeKeyRouteImport.update({
   id: '/$recipeKey',
@@ -22,31 +26,86 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComponentsIndexRoute = ComponentsIndexRouteImport.update({
+  id: '/components/',
+  path: '/components/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppsIndexRoute = AppsIndexRouteImport.update({
+  id: '/apps/',
+  path: '/apps/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComponentsRecipeKeyRoute = ComponentsRecipeKeyRouteImport.update({
+  id: '/components/$recipeKey',
+  path: '/components/$recipeKey',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppsAppKeyRoute = AppsAppKeyRouteImport.update({
+  id: '/apps/$appKey',
+  path: '/apps/$appKey',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$recipeKey': typeof RecipeKeyRoute
+  '/apps/$appKey': typeof AppsAppKeyRoute
+  '/components/$recipeKey': typeof ComponentsRecipeKeyRoute
+  '/apps/': typeof AppsIndexRoute
+  '/components/': typeof ComponentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$recipeKey': typeof RecipeKeyRoute
+  '/apps/$appKey': typeof AppsAppKeyRoute
+  '/components/$recipeKey': typeof ComponentsRecipeKeyRoute
+  '/apps': typeof AppsIndexRoute
+  '/components': typeof ComponentsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$recipeKey': typeof RecipeKeyRoute
+  '/apps/$appKey': typeof AppsAppKeyRoute
+  '/components/$recipeKey': typeof ComponentsRecipeKeyRoute
+  '/apps/': typeof AppsIndexRoute
+  '/components/': typeof ComponentsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$recipeKey'
+  fullPaths:
+    | '/'
+    | '/$recipeKey'
+    | '/apps/$appKey'
+    | '/components/$recipeKey'
+    | '/apps/'
+    | '/components/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$recipeKey'
-  id: '__root__' | '/' | '/$recipeKey'
+  to:
+    | '/'
+    | '/$recipeKey'
+    | '/apps/$appKey'
+    | '/components/$recipeKey'
+    | '/apps'
+    | '/components'
+  id:
+    | '__root__'
+    | '/'
+    | '/$recipeKey'
+    | '/apps/$appKey'
+    | '/components/$recipeKey'
+    | '/apps/'
+    | '/components/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RecipeKeyRoute: typeof RecipeKeyRoute
+  AppsAppKeyRoute: typeof AppsAppKeyRoute
+  ComponentsRecipeKeyRoute: typeof ComponentsRecipeKeyRoute
+  AppsIndexRoute: typeof AppsIndexRoute
+  ComponentsIndexRoute: typeof ComponentsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +124,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/components/': {
+      id: '/components/'
+      path: '/components'
+      fullPath: '/components/'
+      preLoaderRoute: typeof ComponentsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/apps/': {
+      id: '/apps/'
+      path: '/apps'
+      fullPath: '/apps/'
+      preLoaderRoute: typeof AppsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/components/$recipeKey': {
+      id: '/components/$recipeKey'
+      path: '/components/$recipeKey'
+      fullPath: '/components/$recipeKey'
+      preLoaderRoute: typeof ComponentsRecipeKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/apps/$appKey': {
+      id: '/apps/$appKey'
+      path: '/apps/$appKey'
+      fullPath: '/apps/$appKey'
+      preLoaderRoute: typeof AppsAppKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RecipeKeyRoute: RecipeKeyRoute,
+  AppsAppKeyRoute: AppsAppKeyRoute,
+  ComponentsRecipeKeyRoute: ComponentsRecipeKeyRoute,
+  AppsIndexRoute: AppsIndexRoute,
+  ComponentsIndexRoute: ComponentsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
