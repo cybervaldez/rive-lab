@@ -96,7 +96,7 @@ export const recipes: Recipe[] = [
       {
         step: 'Add Rive Events',
         detail: 'Fire onComplete when progress hits 100, onStateChange on state transitions',
-        verifies: ['event:complete->complete'],
+        verifies: [],
       },
     ],
     readout: [

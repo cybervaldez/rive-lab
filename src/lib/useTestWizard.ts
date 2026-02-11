@@ -156,6 +156,9 @@ export function useTestWizard(recipeKey: string, machineId: string, instruct: In
 
   // Run event-driven checks for current step
   const runEventChecks = useCallback(() => {
+    const xstate = (window as any).__xstate__?.[machineId]
+    if (xstate?.reset) xstate.reset()
+
     setResults((prev) => {
       const next = [...prev]
       const stepChecks = [...next[stepIndex]]

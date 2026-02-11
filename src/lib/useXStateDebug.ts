@@ -9,6 +9,7 @@ declare global {
         state: () => any
         context: () => any
         send: (event: any) => void
+        reset: () => any
       }
     >
   }
@@ -21,6 +22,10 @@ export function useXStateDebug(name: string, actorRef: ActorRefFrom<AnyStateMach
       state: () => actorRef.getSnapshot().value,
       context: () => actorRef.getSnapshot().context,
       send: actorRef.send.bind(actorRef),
+      reset: () => {
+        actorRef.send({ type: 'reset' })
+        return actorRef.getSnapshot().value
+      },
     }
     return () => {
       delete window.__xstate__[name]
