@@ -37,7 +37,7 @@ XState app is the fallback.
 |-------------------------|---------------------------|
 | Context property        | ViewModel property        |
 | Event type              | Trigger                   |
-| Machine state node      | State machine state       |
+| State node              | State machine state       |
 | `window.__xstate__`     | `window.__rive_debug__`   |
 | `actor.send(event)`     | `vm.trigger()`            |
 | `actor.getSnapshot()`   | `vm.property.value`       |
@@ -71,6 +71,8 @@ Every state node and transition carries a `description` string that documents it
 - **AI-assisted development practitioners** who need the pipeline to verify GPU-opaque canvas behavior
 
 ## Quick Start
+
+Live demo coming soon.
 
 ```bash
 npm install

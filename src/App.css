@@ -1424,7 +1424,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 80vh;
+  min-height: 100vh;
   text-align: center;
   gap: var(--space-6);
 }
@@ -1438,38 +1438,56 @@ html, body {
 }
 
 .homepage-tagline {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  color: var(--color-text);
+  font-weight: 400;
+  line-height: var(--leading-tight);
+  max-width: 28ch;
+}
+
+.homepage-subtitle {
+  font-family: var(--font-sans);
   font-size: var(--text-base);
   color: var(--color-text-secondary);
-  letter-spacing: var(--tracking-wide);
+  line-height: var(--leading-relaxed);
   max-width: 36ch;
 }
 
-.homepage-hero-nav {
+.homepage-ctas {
   display: flex;
   gap: var(--space-4);
   margin-top: var(--space-4);
 }
 
-.homepage-hero-link {
+.cta-primary {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-bg);
+  background: var(--color-accent);
+  text-decoration: none;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-sm);
+  transition: opacity var(--duration-fast) var(--ease-out);
+  font-weight: 500;
+}
+.cta-primary:hover { opacity: 0.85; }
+
+.cta-secondary {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   letter-spacing: var(--tracking-wide);
   color: var(--color-text-tertiary);
   text-decoration: none;
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-6);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   transition: all var(--duration-fast) var(--ease-out);
 }
-
-.homepage-hero-link:hover {
+.cta-secondary:hover {
   color: var(--color-accent);
   border-color: var(--color-accent);
-}
-
-.homepage-hero-count {
-  color: var(--color-accent);
 }
 
 .homepage-section {
@@ -1506,6 +1524,75 @@ html, body {
 
 .homepage-section-link:hover {
   opacity: 0.8;
+}
+
+.contract-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.contract-table th,
+.contract-table td {
+  text-align: left;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+}
+.contract-table th {
+  background: var(--color-bg-raised);
+  color: var(--color-text-tertiary);
+  font-weight: 400;
+  letter-spacing: var(--tracking-wide);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+}
+.contract-table td {
+  color: var(--color-text-secondary);
+}
+
+.code-block {
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.explore-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.explore-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: inherit;
+  transition: all var(--duration-base) var(--ease-out);
+}
+.explore-card:hover {
+  border-color: var(--color-text-tertiary);
+  transform: translateY(-1px);
+}
+.explore-card-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+}
+.explore-card-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
 }
 
 /* ================================================================

@@ -20,15 +20,23 @@ sleep 2
 VALUE=$(browser_eval "document.querySelector('h1')?.textContent")
 echo "$VALUE" | grep -q "rive-lab" && pass "rive-lab heading rendered" || fail "rive-lab heading not found: got '$VALUE'"
 
-# 2. Components link present
-VALUE=$(browser_eval "document.querySelector('a[href=\"/components\"]') !== null")
-[ "$VALUE" = "true" ] && pass "Components link present" || fail "Components link missing"
+# 2. Primary CTA links to demo
+VALUE=$(browser_eval "document.querySelector('a[href=\"/components/progress-bar\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Try the demo CTA present" || fail "Try the demo CTA missing"
 
-# 3. Apps link present
+# 3. Browse all link present
+VALUE=$(browser_eval "document.querySelector('a[href=\"/components\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Browse all CTA present" || fail "Browse all CTA missing"
+
+# 4. Contract table present
+VALUE=$(browser_eval "document.querySelector('.contract-table') !== null")
+[ "$VALUE" = "true" ] && pass "Contract table present" || fail "Contract table missing"
+
+# 5. Explore section has apps link
 VALUE=$(browser_eval "document.querySelector('a[href=\"/apps\"]') !== null")
 [ "$VALUE" = "true" ] && pass "Apps link present" || fail "Apps link missing"
 
-# 4. No JS errors
+# 6. No JS errors
 JS_ERRORS=$(agent-browser errors 2>/dev/null || echo "")
 if [ -z "$JS_ERRORS" ] || echo "$JS_ERRORS" | grep -q "^\[\]$"; then
     pass "No JS errors on homepage"

@@ -1,77 +1,94 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { getComponents, getApps } from '../lib/recipes'
 
 export const Route = createFileRoute('/')({
   component: Homepage,
 })
 
 function Homepage() {
-  const components = getComponents()
-  const apps = getApps()
-
   return (
     <div className="homepage" data-testid="homepage">
       {/* Hero */}
       <section className="homepage-hero" data-testid="homepage-hero">
         <h1 className="homepage-title">rive-lab</h1>
         <p className="homepage-tagline">
-          XState as a living spec for Rive animations
+          Build interactive animations<br />that AI can fully test.
         </p>
-        <nav className="homepage-hero-nav">
-          <Link to="/components" className="homepage-hero-link">
-            components <span className="homepage-hero-count">{components.length}</span>
+        <p className="homepage-subtitle">
+          XState machines define the contract.<br />
+          Rive designers follow it.
+        </p>
+        <nav className="homepage-ctas">
+          <Link to="/components/progress-bar" className="cta-primary">
+            Try the demo &rarr;
           </Link>
-          <Link to="/apps" className="homepage-hero-link">
-            apps <span className="homepage-hero-count">{apps.length}</span>
+          <Link to="/components" className="cta-secondary">
+            Browse all &rarr;
           </Link>
         </nav>
       </section>
 
-      {/* What is rive-lab */}
-      <section className="homepage-section" data-testid="homepage-about">
-        <h2 className="homepage-section-title">What is rive-lab?</h2>
+      {/* Why */}
+      <section className="homepage-section" data-testid="homepage-why">
+        <h2 className="homepage-section-title">Why?</h2>
         <p className="homepage-section-text">
-          Every animation starts as an XState machine that <strong>self-documents</strong>.
-          Each machine carries a <code>meta</code> block describing its context properties,
-          ViewModel name, and state machine name — everything the Rive designer needs to
-          know, embedded in the code itself.
-        </p>
-        <p className="homepage-section-text">
-          States and transitions carry human-readable <code>description</code> fields
-          that AI tools and designers can parse. Every state handles a
-          universal <code>reset</code> event, so the wizard and pipeline can always
-          return to a known starting point.
-        </p>
-        <p className="homepage-section-text">
-          The machine <em>is</em> the spec. A Rive designer reads the meta, matches
-          names exactly, and the swap is seamless — no separate handoff doc required.
+          Rive animations are beautiful but opaque to tests. XState machines are
+          testable but invisible. <strong>rive-lab</strong> bridges the gap: the
+          machine <em>is</em> the spec, carrying every ViewModel name, property
+          type, and state the designer needs &mdash; embedded in the code itself.
         </p>
       </section>
 
-      {/* Components */}
-      <section className="homepage-section" data-testid="homepage-components">
-        <h2 className="homepage-section-title">Components</h2>
+      {/* The contract */}
+      <section className="homepage-section" data-testid="homepage-contract">
+        <h2 className="homepage-section-title">The contract</h2>
         <p className="homepage-section-text">
-          Small, single-concern animations — progress bars, toggles, counters.
-          Each one maps a handful of XState bindings to a Rive artboard. Perfect
-          for learning the contract pattern.
+          Each XState concept maps directly to a Rive concept:
         </p>
-        <Link to="/components" className="homepage-section-link">
-          Browse {components.length} components &rarr;
-        </Link>
+        <table className="contract-table">
+          <thead>
+            <tr><th>XState</th><th>Rive</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Context property</td><td>ViewModel property</td></tr>
+            <tr><td>Event type</td><td>Trigger</td></tr>
+            <tr><td>State node</td><td>State machine state</td></tr>
+            <tr><td>actor.send()</td><td>vm.trigger()</td></tr>
+            <tr><td>getSnapshot()</td><td>vm.property.value</td></tr>
+          </tbody>
+        </table>
       </section>
 
-      {/* Apps */}
-      <section className="homepage-section" data-testid="homepage-apps">
-        <h2 className="homepage-section-title">Apps</h2>
+      {/* In the code */}
+      <section className="homepage-section" data-testid="homepage-code">
+        <h2 className="homepage-section-title">In the code</h2>
         <p className="homepage-section-text">
-          Full-screen, multi-region experiences — like a media player with parallel
-          playback and volume state machines. Apps use XState&apos;s parallel regions
-          mapped to Rive&apos;s layer system.
+          Every machine carries a <code>meta</code> block that self-documents
+          the contract:
         </p>
-        <Link to="/apps" className="homepage-section-link">
-          Browse {apps.length} apps &rarr;
-        </Link>
+        <pre className="code-block">
+{`meta: {
+  riveViewModel: 'ProgressBarVM',
+  contextProperties: {
+    progress: { type: 'number', range: [0, 100] },
+    isActive: { type: 'boolean' },
+  }
+}`}
+        </pre>
+      </section>
+
+      {/* Explore */}
+      <section className="homepage-section" data-testid="homepage-explore">
+        <h2 className="homepage-section-title">Explore</h2>
+        <div className="explore-grid">
+          <Link to="/components" className="explore-card">
+            <span className="explore-card-title">Components</span>
+            <span className="explore-card-desc">Small, single-concern animations</span>
+          </Link>
+          <Link to="/apps" className="explore-card">
+            <span className="explore-card-title">Apps</span>
+            <span className="explore-card-desc">Full-screen, multi-region experiences</span>
+          </Link>
+        </div>
       </section>
     </div>
   )
