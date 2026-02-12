@@ -1,27 +1,40 @@
 #!/bin/bash
-# tests/test_welcome.sh — Verify TanStack Start SSR homepage
-set -euo pipefail
+# tests/test_welcome.sh — Verify homepage renders correctly
+set +e
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/test_utils.sh"
 
 BASE_URL="${BASE_URL:-http://localhost:5173}"
+setup_cleanup
+print_header "Welcome / Homepage Tests"
 
-cleanup() {
-    agent-browser close 2>/dev/null || true
-}
-trap cleanup EXIT
+if ! wait_for_server "$BASE_URL"; then
+    fail "Server not running on $BASE_URL"
+    print_summary
+fi
 
 agent-browser open "$BASE_URL"
 sleep 2
 
-# Check SSR-rendered command palette with rive-lab prompt
-agent-browser snapshot -c | grep -q "rive-lab"
-echo "  [PASS] rive-lab prompt rendered"
+# 1. Homepage renders rive-lab heading
+VALUE=$(browser_eval "document.querySelector('h1')?.textContent")
+echo "$VALUE" | grep -q "rive-lab" && pass "rive-lab heading rendered" || fail "rive-lab heading not found: got '$VALUE'"
 
-# Verify XState debug state is exposed (client-side hydration)
-STATE=$(agent-browser eval "window.__xstate__?.state" 2>/dev/null)
-[ -n "$STATE" ] && echo "  [PASS] XState state exposed: $STATE"
+# 2. Components link present
+VALUE=$(browser_eval "document.querySelector('a[href=\"/components\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Components link present" || fail "Components link missing"
 
-# Verify app state initialized
-INIT=$(agent-browser eval "window.appState?.initialized" 2>/dev/null)
-[ "$INIT" = "true" ] && echo "  [PASS] App state initialized"
+# 3. Apps link present
+VALUE=$(browser_eval "document.querySelector('a[href=\"/apps\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Apps link present" || fail "Apps link missing"
 
-echo "PASS: Welcome page loads successfully"
+# 4. No JS errors
+JS_ERRORS=$(agent-browser errors 2>/dev/null || echo "")
+if [ -z "$JS_ERRORS" ] || echo "$JS_ERRORS" | grep -q "^\[\]$"; then
+    pass "No JS errors on homepage"
+else
+    fail "JS errors: $JS_ERRORS"
+fi
+
+agent-browser close 2>/dev/null || true
+print_summary

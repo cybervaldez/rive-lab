@@ -13,52 +13,48 @@ if ! wait_for_server "$BASE_URL"; then
     print_summary
 fi
 
-agent-browser open "$BASE_URL"
+agent-browser open "$BASE_URL/components/progress-bar"
 sleep 2
 
-# 1. Stage title shows first recipe name
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"stage-title\"]')?.textContent")
-[ "$VALUE" = "PROGRESS BAR" ] && pass "Stage title shows 'PROGRESS BAR'" || fail "Stage title: got '$VALUE' (expected: PROGRESS BAR)"
+# 1. URL lands on progress-bar (default recipe)
+VALUE=$(browser_eval "window.location.pathname")
+echo "$VALUE" | grep -q "progress-bar" && pass "URL lands on progress-bar" || fail "URL: got '$VALUE' (expected: /components/progress-bar)"
 
-# 2. Machine state shows 'loading'
+# 2. Machine state shows 'idle' (initial state)
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-state\"]')?.textContent")
-[ "$VALUE" = "loading" ] && pass "Machine state shows 'loading'" || fail "Machine state: got '$VALUE' (expected: loading)"
+[ "$VALUE" = "idle" ] && pass "Machine state: idle" || fail "Machine state: got '$VALUE' (expected: idle)"
 
-# 3. Sidebar bindings count is 7
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"status-bindings\"]')?.textContent")
-[ "$VALUE" = "7" ] && pass "Sidebar bindings: 7" || fail "Sidebar bindings: got '$VALUE' (expected: 7)"
-
-# 4. Sidebar states count is 3
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"status-states\"]')?.textContent")
-[ "$VALUE" = "3" ] && pass "Sidebar states: 3" || fail "Sidebar states: got '$VALUE' (expected: 3)"
-
-# 5. Footer bindings matches
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"footer-bindings\"]')?.textContent")
-[ "$VALUE" = "7" ] && pass "Footer bindings: 7" || fail "Footer bindings: got '$VALUE' (expected: 7)"
-
-# 6. Footer states matches
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"footer-states\"]')?.textContent")
-[ "$VALUE" = "3" ] && pass "Footer states: 3" || fail "Footer states: got '$VALUE' (expected: 3)"
-
-# 7. Footer triggers matches
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"footer-triggers\"]')?.textContent")
-[ "$VALUE" = "2" ] && pass "Footer triggers: 2" || fail "Footer triggers: got '$VALUE' (expected: 2)"
-
-# 8. Readout state shows 'loading'
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-state\"]')?.textContent")
-[ "$VALUE" = "loading" ] && pass "Readout state: loading" || fail "Readout state: got '$VALUE' (expected: loading)"
-
-# 9. Readout progress shows 65
+# 3. Readout progress is 0 (initial context)
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-progress\"]')?.textContent")
-[ "$VALUE" = "65" ] && pass "Readout progress: 65" || fail "Readout progress: got '$VALUE' (expected: 65)"
+[ "$VALUE" = "0" ] && pass "Readout progress: 0" || fail "Readout progress: got '$VALUE' (expected: 0)"
 
-# 10. XState window object exposed
+# 4. Readout isActive is false (initial context)
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-active\"]')?.textContent")
+[ "$VALUE" = "false" ] && pass "Readout isActive: false" || fail "Readout isActive: got '$VALUE' (expected: false)"
+
+# 5. Docs pill exists and is not active
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"topbar-docs\"]')?.classList.contains('active')")
+[ "$VALUE" = "false" ] && pass "Docs pill not active on load" || fail "Docs pill active on load: got '$VALUE'"
+
+# 6. Stage-live visible (demo showing, not docs)
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"stage-live\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Stage-live visible on load" || fail "Stage-live missing on load"
+
+# 7. Instructions button exists
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"tab-panel\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Instructions button present" || fail "Instructions button missing"
+
+# 8. XState window object exposed
 VALUE=$(browser_eval "window.__xstate__?.state")
 [ -n "$VALUE" ] && pass "XState exposed on window (state=$VALUE)" || fail "XState not exposed on window"
 
-# 11. No JS errors on page load
-ERRORS=$(browser_eval "window.__jsErrors?.length || 0")
-[ "$ERRORS" = "0" ] || [ -z "$ERRORS" ] && pass "No JS errors detected" || fail "JS errors found: $ERRORS"
+# 9. No JS errors on page load
+JS_ERRORS=$(agent-browser errors 2>/dev/null || echo "")
+if [ -z "$JS_ERRORS" ] || echo "$JS_ERRORS" | grep -q "^\[\]$"; then
+    pass "No JS errors detected"
+else
+    fail "JS errors found: $JS_ERRORS"
+fi
 
 agent-browser close 2>/dev/null || true
 print_summary

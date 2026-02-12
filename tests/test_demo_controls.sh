@@ -13,7 +13,7 @@ if ! wait_for_server "$BASE_URL"; then
     print_summary
 fi
 
-agent-browser open "$BASE_URL"
+agent-browser open "$BASE_URL/components/progress-bar"
 sleep 2
 
 # 1. Reset sets state to idle, progress to 0, isActive to false

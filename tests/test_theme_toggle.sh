@@ -13,7 +13,7 @@ if ! wait_for_server "$BASE_URL"; then
     print_summary
 fi
 
-agent-browser open "$BASE_URL"
+agent-browser open "$BASE_URL/components/progress-bar"
 sleep 2
 
 # 1. Default theme is dark
@@ -36,9 +36,9 @@ VALUE=$(browser_eval "document.querySelector('[data-testid=\"theme-label\"]')?.t
 ATTR=$(browser_eval "document.documentElement.getAttribute('data-theme')")
 [ "$VALUE" = "dark" ] && [ "$ATTR" = "dark" ] && pass "Toggle back to dark: label='dark', data-theme='dark'" || fail "Toggle back to dark: label='$VALUE', data-theme='$ATTR'"
 
-# 4. Theme persists across interactions (click a recipe, theme stays)
-agent-browser eval "document.querySelector('[data-testid=\"entry-toggle-switch\"]')?.click()" 2>/dev/null
-sleep 0.5
+# 4. Theme persists after navigating to another recipe
+agent-browser open "$BASE_URL/components/toggle-switch" 2>/dev/null
+sleep 2
 
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"theme-label\"]')?.textContent")
 [ "$VALUE" = "dark" ] && pass "Theme persists after recipe switch: dark" || fail "Theme changed after recipe switch: got '$VALUE'"

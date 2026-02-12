@@ -1,5 +1,5 @@
 #!/bin/bash
-# tests/test_command_palette.sh — Verify recipe selection updates all panels
+# tests/test_command_palette.sh — Verify recipe selection updates readout and state
 set +e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/test_utils.sh"
@@ -13,44 +13,46 @@ if ! wait_for_server "$BASE_URL"; then
     print_summary
 fi
 
-agent-browser open "$BASE_URL"
+# Start at progress-bar
+agent-browser open "$BASE_URL/components/progress-bar"
 sleep 2
 
-# Click toggle-switch entry
-agent-browser eval "document.querySelector('[data-testid=\"entry-toggle-switch\"]')?.click()" 2>/dev/null
-sleep 0.5
+# 1. Initial recipe is progress-bar
+VALUE=$(browser_eval "window.location.pathname")
+echo "$VALUE" | grep -q "progress-bar" && pass "Initial recipe: progress-bar" || fail "Initial recipe: got '$VALUE'"
 
-# 1. Stage title updates to TOGGLE SWITCH
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"stage-title\"]')?.textContent")
-[ "$VALUE" = "TOGGLE SWITCH" ] && pass "Stage title: TOGGLE SWITCH" || fail "Stage title: got '$VALUE' (expected: TOGGLE SWITCH)"
+# 2. Navigate to toggle-switch — readout updates
+agent-browser open "$BASE_URL/components/toggle-switch" 2>/dev/null
+sleep 2
 
-# 2. Machine state updates to 'off'
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-state\"]')?.textContent")
-[ "$VALUE" = "off" ] && pass "Machine state: off" || fail "Machine state: got '$VALUE' (expected: off)"
+[ "$VALUE" = "off" ] && pass "Toggle-switch state: off" || fail "Toggle-switch state: got '$VALUE' (expected: off)"
 
-# 3. Readout state matches
+# 3. Toggle-switch readout shows isOn=false
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-active\"]')?.textContent")
+[ "$VALUE" = "false" ] && pass "Toggle-switch isOn: false" || fail "Toggle-switch isOn: got '$VALUE' (expected: false)"
+
+# 4. Navigate to counter — readout updates
+agent-browser open "$BASE_URL/components/counter" 2>/dev/null
+sleep 2
+
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-state\"]')?.textContent")
-[ "$VALUE" = "off" ] && pass "Readout state: off" || fail "Readout state: got '$VALUE' (expected: off)"
+[ "$VALUE" = "idle" ] && pass "Counter state: idle" || fail "Counter state: got '$VALUE' (expected: idle)"
 
-# 4. Readout progress is 0
+# 5. Counter readout shows count=0
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-progress\"]')?.textContent")
-[ "$VALUE" = "0" ] && pass "Readout progress: 0" || fail "Readout progress: got '$VALUE' (expected: 0)"
+[ "$VALUE" = "0" ] && pass "Counter count: 0" || fail "Counter count: got '$VALUE' (expected: 0)"
 
-# 5. Footer bindings updates to 4
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"footer-bindings\"]')?.textContent")
-[ "$VALUE" = "4" ] && pass "Footer bindings: 4" || fail "Footer bindings: got '$VALUE' (expected: 4)"
+# 6. Navigate back to progress-bar — readout resets
+agent-browser open "$BASE_URL/components/progress-bar" 2>/dev/null
+sleep 2
 
-# 6. Footer states updates to 2
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"footer-states\"]')?.textContent")
-[ "$VALUE" = "2" ] && pass "Footer states: 2" || fail "Footer states: got '$VALUE' (expected: 2)"
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-state\"]')?.textContent")
+[ "$VALUE" = "idle" ] && pass "Back to progress-bar state: idle" || fail "Back to progress-bar state: got '$VALUE' (expected: idle)"
 
-# 7. XState window state reflects recipe change
-VALUE=$(browser_eval "window.__xstate__?.recipeName")
-[ "$VALUE" = "toggle-switch" ] && pass "XState recipeName: toggle-switch" || fail "XState recipeName: got '$VALUE' (expected: toggle-switch)"
-
-# 8. Tab resets to demo
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"tab-demo\"]')?.classList.contains('active')")
-[ "$VALUE" = "true" ] && pass "Tab reset to demo after recipe switch" || fail "Tab not reset to demo: got '$VALUE'"
+# 7. Demo view visible (not docs)
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"stage-live\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Stage-live visible after recipe switch" || fail "Stage-live missing after recipe switch"
 
 agent-browser close 2>/dev/null || true
 print_summary
