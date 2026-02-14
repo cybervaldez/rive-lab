@@ -13,7 +13,7 @@ Rive is an interactive animation runtime that compiles designs to `.riv` binarie
 | Form Handling | No |
 | Animation | Partial (GPU canvas, not DOM) |
 | Routing | No |
-| Testing Tools | No |
+| Testing Tools | Partial (Test protocol scripts inside .riv) |
 | Build Tools | No |
 | Styling | No |
 | Auth | No |
@@ -22,12 +22,12 @@ Rive is an interactive animation runtime that compiles designs to `.riv` binarie
 
 | Skill | Impact | Reason |
 |-------|--------|--------|
-| create-task | High | File structure for `.riv` assets, ViewModel contracts |
-| coding-guard | High | Data Binding anti-patterns, property type mismatches |
-| cli-first | High | Canvas is opaque — state must be exposed via Data Binding |
-| e2e-guard | Medium | Coverage must verify bindings, not just DOM |
-| e2e | Medium | Verification via `window.__rive_debug__` instead of DOM queries |
-| e2e-investigate | Medium | Failures are binding mismatches, not DOM errors |
+| create-task | High | File structure for `.riv` assets, ViewModel contracts, Rive Event wiring |
+| coding-guard | High | Data Binding anti-patterns, property type mismatches, logic boundary (XState vs Luau) |
+| cli-first | High | Canvas is opaque — state must be exposed via Data Binding; scripts can fire Rive Events as return channel |
+| e2e-guard | High | Coverage must verify bindings and Rive Events; Test protocol scripts enable in-canvas validation |
+| e2e | High | Verification via `window.__rive_debug__`; deterministicMode enables repeatable script execution |
+| e2e-investigate | Medium | Failures are binding mismatches, script execution errors, or Rive Event drops |
 | ux-review | Medium | Animation quality is visual — canvas screenshots only |
 
 ## User's Use Case
@@ -104,6 +104,136 @@ How each property type communicates between JS and Rive:
 | **JS fires trigger** | JS -> Rive | `.trigger()` / `trigger()` | Tell animation to do something |
 | **Rive fires trigger** | Rive -> JS | `onTrigger` callback | Animation tells app something happened |
 | **Nested access** | Both | `vmi.viewModel("child")` | Compose complex ViewModels |
+
+---
+
+## Scripting (Luau)
+
+Rive embeds a high-performance Luau (Roblox's Lua fork) engine directly into the runtime. Scripts live inside the `.riv` file and run in a sandboxed VM — the same engine runs in the Rive Editor and all production runtimes (Web, iOS, Android, Unity), ensuring identical behavior everywhere.
+
+### Why This Matters for rive-lab
+
+Scripts add **procedural logic** inside `.riv` files. This creates a logic boundary question: what belongs in XState vs what belongs in Luau? The convention is:
+
+- **XState**: Orchestration, state transitions, business logic, anything the pipeline must test
+- **Luau scripts**: Procedural visual effects (particles, custom drawing, layout math, path deformation) that are inherently visual and don't need pipeline test coverage
+
+### Protocols
+
+Scripts are organized into **Protocols** — structured categories that define scope and available APIs. Each protocol generates a typed scaffold constraining the script to its job.
+
+| Protocol | Required Methods | Purpose | rive-lab Relevance |
+|----------|-----------------|---------|-------------------|
+| **Node** | `draw()`, pointer handlers | Custom drawing, scene graph logic | Procedural visual effects on state change |
+| **Layout** | `measure()` | Custom layout within Rive's layout system | Rive-native responsive layout |
+| **Converter** | `convert()`, `reverseConvert()` | Data transformation on shapes/transforms | Shape manipulation (rarely needed for UI) |
+| **PathEffect** | `processPath()` | Procedural behavior on strokes/paths | Loading animations, decorative strokes |
+| **Test** | *(validation logic)* | Validation and testing harnesses | In-canvas contract verification |
+| **Transition Condition** | *(condition logic)* | Programmatic state machine transitions | Script-driven guards |
+| **Listener Action** | *(action logic)* | Custom logic on listener fire | Side effects on interaction |
+| **Util** | *(exports)* | Shared helper modules | Common logic across scripts |
+
+### Two-Way Communication
+
+Scripts extend the existing Data Binding communication model with a return channel:
+
+| Direction | Mechanism | Example |
+|-----------|-----------|---------|
+| **App → Script** | Update ViewModel property via Runtime API | `vmi.setNumber('health', 50)` → script reacts |
+| **App → Script** | State Machine input (trigger/boolean) | Trigger fires → script attached to state change runs |
+| **Script → App** | Fire Rive Event | Script fires event → `rive.on(EventType.RiveEvent, handler)` |
+| **Script ↔ Script** | Internal ViewModel binding | Invisible to XState — logic stays inside .riv |
+
+### Rive Events (Return Channel)
+
+Scripts (and state machines) can fire **Rive Events** — named signals with custom metadata that the runtime listens for.
+
+Two types:
+- **General**: Carries custom properties (string, number, boolean) for app logic
+- **OpenUrl**: Triggers navigation (handled manually, won't auto-open)
+
+Event object structure:
+
+```typescript
+{
+  data: {
+    name: string,          // event name set in Rive Editor
+    type: RiveEventType,   // General or OpenUrl
+    properties: {          // custom metadata
+      [key: string]: string | number | boolean
+    },
+    url?: string,          // OpenUrl only
+    target?: string,       // OpenUrl only
+  }
+}
+```
+
+Listening in React:
+
+```typescript
+import { EventType, RiveEventType } from '@rive-app/canvas';
+
+useEffect(() => {
+  if (rive) {
+    rive.on(EventType.RiveEvent, (riveEvent) => {
+      const { name, type, properties } = riveEvent.data;
+      if (type === RiveEventType.General) {
+        // Translate to XState event
+        actorRef.send({ type: name, ...properties });
+      }
+    });
+  }
+}, [rive]);
+```
+
+**Note**: Rive docs mark the Events system as legacy, recommending Data Binding triggers for new projects. For rive-lab, prefer `onTrigger` (Data Binding) as the primary return channel, with Rive Events as a secondary option for scripts that need to send rich metadata.
+
+### Sandboxing & Safety
+
+| Property | Behavior |
+|----------|----------|
+| Execution limit | 50ms per script call — exceeding terminates execution |
+| I/O access | None — no file system, no network, no OS operations |
+| Module loading | Custom `require()` only loads pre-registered modules |
+| Bytecode verification | Cryptographic signature check (`hydro_sign_verify`) before execution |
+| Crash isolation | Script failure cannot crash the host application |
+
+### Deterministic Mode
+
+The runtime supports `deterministicMode` for testing — scripts produce **repeatable results for every frame** regardless of platform or timing. This is critical for pipeline verification:
+
+1. XState sends a known state via ViewModel properties
+2. Script processes it deterministically
+3. Script fires a Rive Event or updates a property confirming the result
+4. Pipeline asserts on the expected output
+
+### Test Protocol
+
+The Test protocol creates **validation harnesses inside the .riv file**. Combined with `deterministicMode`, this enables:
+
+- Asserting that ViewModel properties received correct values from XState
+- Firing confirmation events back to the host to prove the round-trip
+- Running in-canvas validation as part of the e2e pipeline
+
+This could close the "opaque canvas" gap — the pipeline can verify not just that XState sent the right data, but that Rive received and processed it correctly.
+
+### Script Lifecycle
+
+1. `.riv` file loaded → `ScriptAsset` deserialized with bytecode
+2. Bytecode verified → Luau generator function called
+3. Generator returns method table (`draw`, `advance`, `measure`, `convert`, `processPath`)
+4. Runtime calls methods per frame during artboard/state machine advance
+5. State persists across frames — scripts are stateful
+
+### Anti-Patterns
+
+| Anti-Pattern | Problem | Correct |
+|--------------|---------|---------|
+| Business logic in Luau scripts | Pipeline can't test it — .riv is opaque | Keep orchestration in XState |
+| State transitions in scripts | Duplicates XState's job, creates two sources of truth | Scripts react to state, don't drive it |
+| Ignoring deterministicMode in tests | Flaky results from timing differences | Always enable for pipeline runs |
+| Scripts that don't fire confirmation events | No proof the round-trip completed | Test scripts should echo back via Rive Event or trigger |
+| Heavy computation in scripts | 50ms limit will kill it | Keep scripts lightweight; offload to JS |
 
 ---
 
@@ -370,6 +500,11 @@ What the Rive developer needs to implement to match the XState spec:
 
 ---
 
+## Internal Docs
+
+- `techs/rive/scripting-activation.md` — When to activate scripting, protocol selection, HTML/CSS fallbacks
+- `techs/xstate/rive-wiring-conventions.md` — Data Binding contract, naming, handoff checklist
+
 ## Resources
 
 - Data Binding Runtime API: https://rive.app/docs/runtimes/data-binding
@@ -377,4 +512,10 @@ What the Rive developer needs to implement to match the XState spec:
 - React Runtime: https://rive.app/docs/runtimes/react/react
 - State Machines: https://rive.app/docs/runtimes/state-machines
 - State Machine Layers: https://rive.app/docs/editor/state-machine/layers
+- Rive Events Runtime: https://rive.app/docs/runtimes/rive-events
+- Events Editor: https://rive.app/docs/editor/events/overview
+- Scripting Protocols: https://rive.app/docs/scripting/protocols/overview
+- Why Luau: https://rive.app/blog/why-scripting-runs-on-luau
+- Scripting Announcement: https://rive.app/blog/scripting-is-live-in-rive
+- GitHub (rive-runtime): https://github.com/rive-app/rive-runtime
 - GitHub (rive-react): https://github.com/rive-app/rive-react

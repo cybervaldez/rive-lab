@@ -243,6 +243,55 @@ If an option recommends a specific technology (library, framework, tool), add a 
 - `/ux-planner` — Solves the UX problem, suggests tech as options
 - `/research` — Documents pipeline impact, produces `techs/{tech}/README.md`
 
+## Scripting Assessment
+
+After finalizing the UX recommendation but **before handoff**, scan the interaction design for visual patterns that require procedural logic — logic that can't be expressed through Rive Data Binding + State Machine alone.
+
+### Detection Heuristics
+
+| Signal in UX Description | What It Implies | Rive Protocol | HTML/CSS Fallback |
+|--------------------------|----------------|---------------|-------------------|
+| "particles", "confetti", "sparkles", "burst", "emit" | Procedural element spawning | Node (`draw()`) | CSS `@keyframes` + JS spawning `<div>`s |
+| "chart", "graph", "bars from data", "plot", "visualize data" | Data-driven shape generation | Node (`draw()`) | SVG elements or `<canvas>` mapped from context |
+| "circular progress", "wave path", "organic stroke" | Non-linear procedural path | PathEffect (`processPath()`) | SVG `stroke-dashoffset` on a `<path>` |
+| "handwriting", "glitch effect", "stroke varies" | Per-frame stroke variation | PathEffect | SVG filters or CSS `backdrop-filter` |
+| "spring", "bounce", "momentum", "elastic", "physics" | Per-frame physics simulation | Node (`advance()`) | `requestAnimationFrame` + spring math in JS |
+| "responsive within animation", "artboard reflows" | Dynamic layout inside Rive | Layout (`measure()`) | CSS Grid / Flexbox (often simpler in HTML) |
+| "format as currency", "display as percentage", "convert units" | Value transformation for display | Converter (`convert()`) | JS formatting in the React component |
+| "transition when X AND Y AND Z", "complex guard" | Multi-variable transition condition | Transition Condition | XState guards (already native) |
+| "sound at exact frame", "haptic on impact" | Precisely-timed side effect | Listener Action | Rive Event → JS handler |
+
+### When to Include
+
+- **No signals detected**: Skip this section entirely — standard Data Binding is sufficient
+- **Signals detected**: Include a "Scripting Assessment" block in the handoff
+
+### Output Format
+
+When procedural patterns are detected, add to the recommendation:
+
+```markdown
+### Scripting Assessment
+
+| Visual Pattern | Rive Protocol | HTML/CSS Fallback | XState Impact |
+|---------------|---------------|-------------------|---------------|
+| Confetti burst on completion | Node script | CSS particle animation | Add `celebrate` trigger event |
+| (other patterns...) | ... | ... | ... |
+
+**Logic boundary**: XState handles orchestration (when to celebrate).
+Rive script handles visuals (how particles behave). HTML/CSS fallback
+uses [specific approach] for the standalone version.
+```
+
+### Key Principle
+
+Scripting is a **Rive-internal concern**. It does not change the XState ↔ Rive contract. The assessment tells `/create-task`:
+1. What the HTML/CSS fallback needs to implement (procedural visuals in JS/CSS)
+2. What the Rive designer will need beyond standard Data Binding
+3. Whether XState needs additional context properties or events to support the effect
+
+---
+
 ## Handoff Formats
 
 ### To /create-task
@@ -265,6 +314,15 @@ When the user is ready to implement, provide this format:
 - [ ] Requirement 1
 - [ ] Requirement 2
 - [ ] Requirement 3
+
+### Scripting Assessment
+[Only if procedural visual patterns detected — otherwise omit]
+
+| Visual Pattern | Rive Protocol | HTML/CSS Fallback | XState Impact |
+|---------------|---------------|-------------------|---------------|
+| [pattern] | [protocol] | [fallback approach] | [context/event additions] |
+
+**Logic boundary**: [What XState orchestrates vs what Rive/HTML handles visually]
 
 ### Implementation Notes
 [Technical hints for implementation, reference existing patterns]

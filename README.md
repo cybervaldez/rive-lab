@@ -80,6 +80,77 @@ npm run dev
 # Open http://localhost:5173
 ```
 
+## Creating Components & Apps
+
+Every UI idea in rive-lab becomes a **recipe** — either a component or an app.
+
+### Components
+
+Single-concern animations with one XState machine and one state graph.
+
+Examples: progress bar, toggle switch, counter, star rating, button, slider.
+
+| Property | Typical Range |
+|----------|--------------|
+| Context properties | 2–5 |
+| States | 2–3 |
+| Triggers | 1–2 |
+| Rive layers | 1 (single layer) |
+| XState shape | Flat states (`idle → loading → complete`) |
+
+### Apps
+
+Multi-concern experiences with one XState machine using parallel regions.
+
+Examples: media player, dashboard, multi-step wizard, audio mixer.
+
+| Property | Typical Range |
+|----------|--------------|
+| Context properties | 6+ (split across regions) |
+| States | 4+ across parallel regions |
+| Triggers | 3+ |
+| Rive layers | Multiple (one per region) |
+| XState shape | `type: 'parallel'` with region keys |
+
+### How to Decide
+
+| Signal | Component | App |
+|--------|-----------|-----|
+| Independent behaviors? | No — one concern | Yes — e.g. playback AND volume |
+| Parallel state graphs? | No — linear states | Yes — `type: 'parallel'` |
+| Rive layers needed? | One layer | Multiple layers |
+| Context split? | All properties serve one purpose | Properties grouped by region |
+
+### Prompting Flow
+
+```
+Describe your idea ──> /ux-planner ──> /create-task ──> Done
+                        classifies       implements
+                        component/app    machine + HTML/CSS + tests
+```
+
+### Example Prompts
+
+**Component:**
+```
+I want a star rating widget. Users click 1-5 stars, the selected
+stars fill with color, and there's a pulse animation on selection.
+```
+
+**App:**
+```
+I want a media player with independent playback and volume controls.
+Play/pause/stop for audio, plus a separate mute toggle and volume slider.
+```
+
+**Component with scripting:**
+```
+I want a dashboard card that renders a mini bar chart from an array
+of values, with a confetti burst when all values exceed the target.
+```
+
+For scripting edge cases (procedural visuals like particles, charts, physics), see `techs/rive/scripting-activation.md`.
+
 ## Pipeline Skills
 
 | Skill           | What it does in rive-lab                                    |
@@ -105,7 +176,8 @@ rive-lab/
 
 ## Further Reading
 
-- techs/rive/README.md — Rive Data Binding protocol, sender/receiver logging, handoff checklist
+- techs/rive/README.md — Rive Data Binding protocol, scripting, sender/receiver logging, handoff checklist
+- techs/rive/scripting-activation.md — When to activate Rive Scripting, protocol selection, HTML/CSS fallbacks
 - techs/xstate/README.md — XState machine patterns, round-trip logging convention, diagnosis table
 - techs/xstate/rive-wiring-conventions.md — Rive wiring conventions, naming, handoff checklist
 - .claude/skills/SKILL_INDEX.md — Full pipeline reference
