@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { getApps } from '../../lib/recipes'
+import { getTests } from '../../lib/recipes'
 
-export const Route = createFileRoute('/apps/')({
-  component: AppGallery,
+export const Route = createFileRoute('/test/')({
+  component: TestGallery,
 })
 
-function AppGallery() {
-  const apps = getApps()
+function TestGallery() {
+  const tests = getTests()
 
   return (
     <div className="gallery-page">
@@ -14,22 +14,22 @@ function AppGallery() {
         <Link to="/" className="gallery-nav-brand">rive-lab</Link>
         <div className="gallery-nav-links">
           <Link to="/components" className="gallery-nav-link">components</Link>
-          <Link to="/apps" className="gallery-nav-link active">apps</Link>
-          <Link to="/test" className="gallery-nav-link">test</Link>
+          <Link to="/apps" className="gallery-nav-link">apps</Link>
+          <Link to="/test" className="gallery-nav-link active">test</Link>
         </div>
       </nav>
 
       <header className="gallery-header">
-        <h1 className="gallery-title">Apps</h1>
-        <p className="gallery-subtitle">Full-screen, multi-region Rive experiences</p>
+        <h1 className="gallery-title">Test</h1>
+        <p className="gallery-subtitle">Verify your Rive integration against the XState contract</p>
       </header>
 
       <div className="gallery-grid">
-        {apps.map((r) => (
+        {tests.map((r) => (
           <Link
             key={r.key}
-            to="/apps/$appKey"
-            params={{ appKey: r.key }}
+            to="/test/$testKey"
+            params={{ testKey: r.key }}
             className="gallery-card"
             data-testid={`gallery-card-${r.key}`}
           >

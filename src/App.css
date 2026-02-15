@@ -538,6 +538,114 @@ html, body {
   text-align: center;
 }
 
+.stage-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-2) var(--space-3);
+}
+
+.renderer-toggle {
+  display: flex;
+  gap: 1px;
+  background: var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.renderer-toggle-btn {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-1) var(--space-3);
+  border: none;
+  background: var(--color-bg-card);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.renderer-toggle-btn:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+.renderer-toggle-btn--active {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+}
+
+.renderer-toggle-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ================================================================
+   RIVE RENDERER (placeholder)
+   ================================================================ */
+.rive-renderer {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.rive-renderer-canvas {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--color-bg-raised);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.rive-renderer-placeholder-icon {
+  font-size: var(--text-2xl);
+  color: var(--color-text-tertiary);
+  opacity: 0.3;
+}
+
+.rive-renderer-placeholder-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-text-tertiary);
+}
+
+.rive-renderer-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.rive-renderer-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: 1.6;
+}
+
+.rive-renderer-info-key {
+  color: var(--color-text-tertiary);
+}
+
+.rive-renderer-info-val {
+  color: var(--color-accent);
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
 
 .demo-progress {
   width: 100%;
@@ -672,6 +780,115 @@ html, body {
   text-align: center;
 }
 
+
+/* ================================================================
+   TEST BENCH DEMO
+   ================================================================ */
+.demo-test-bench {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.bench-readout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.bench-readout-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
+.bench-readout-key {
+  color: var(--color-text-tertiary);
+}
+
+.bench-readout-val {
+  color: var(--color-accent);
+}
+
+.bench-progress-track {
+  height: 4px;
+  background: var(--color-border);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.bench-progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: var(--radius-xs);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+.bench-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.bench-section-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-tertiary);
+}
+
+.bench-range {
+  flex: 1;
+  accent-color: var(--color-accent);
+}
+
+.bench-range-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+  min-width: 3ch;
+  text-align: right;
+}
+
+.bench-text-input {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-card);
+  color: var(--color-text);
+}
+.bench-text-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+.bench-text-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bench-event-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.demo-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 /* ================================================================
    DOCS PILL BUTTON (in topbar)

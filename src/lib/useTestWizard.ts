@@ -58,7 +58,7 @@ function buildChecks(instruct: InstructStep[]): CheckResult[][] {
   )
 }
 
-function readRiveUrl(recipeKey: string): string {
+export function readRiveUrl(recipeKey: string): string {
   try {
     return localStorage.getItem(`rive-url:${recipeKey}`) ?? ''
   } catch (e) {

@@ -105,6 +105,10 @@ function Homepage() {
             <span className="explore-card-title">Apps</span>
             <span className="explore-card-desc">Full-screen, multi-region experiences</span>
           </Link>
+          <Link to="/test" className="explore-card">
+            <span className="explore-card-title">Test</span>
+            <span className="explore-card-desc">Verify Rive integration against the contract</span>
+          </Link>
         </div>
       </section>
     </div>

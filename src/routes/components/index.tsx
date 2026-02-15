@@ -15,6 +15,7 @@ function ComponentGallery() {
         <div className="gallery-nav-links">
           <Link to="/components" className="gallery-nav-link active">components</Link>
           <Link to="/apps" className="gallery-nav-link">apps</Link>
+          <Link to="/test" className="gallery-nav-link">test</Link>
         </div>
       </nav>
 

@@ -30,7 +30,7 @@ export interface RecipeConcept {
 export interface Recipe {
   key: string
   name: string
-  type: 'component' | 'app'
+  type: 'component' | 'app' | 'test'
   state: string
   progress: number
   active: boolean
@@ -410,6 +410,143 @@ export const recipes: Recipe[] = [
       { label: 'isPlaying', source: 'active' },
     ],
   },
+  {
+    key: 'test-bench',
+    name: 'TEST BENCH',
+    type: 'test',
+    state: 'idle',
+    progress: 0,
+    active: false,
+    status: 'wip',
+    bindings: 10,
+    states: 3,
+    triggers: 3,
+    contract: [
+      { xstate: 'context.progress', rive: 'ViewModel property progress (Number, Source→Target)' },
+      { xstate: 'context.label', rive: 'ViewModel property label (String, Source→Target)' },
+      { xstate: 'context.isActive', rive: 'ViewModel property isActive (Boolean, Source→Target)' },
+      { xstate: 'context.mode', rive: 'ViewModel property mode (Enum, Source→Target)' },
+      { xstate: 'context.sliderValue', rive: 'ViewModel property sliderValue (Number, Target→Source)' },
+      { xstate: 'event: activate', rive: 'Trigger activate' },
+      { xstate: 'event: complete', rive: 'Trigger complete' },
+      { xstate: 'event: reset', rive: 'Trigger reset' },
+      { xstate: 'state: idle', rive: 'State: idle' },
+      { xstate: 'state: active', rive: 'State: active' },
+      { xstate: 'state: complete', rive: 'State: complete' },
+    ],
+    events: [
+      { name: 'progress', direction: 'in', type: 'Number Input', description: 'Current progress 0–100 (Source→Target)' },
+      { name: 'label', direction: 'in', type: 'String Input', description: 'Text label for display (Source→Target)' },
+      { name: 'isActive', direction: 'in', type: 'Boolean Input', description: 'Whether bench is active (Source→Target)' },
+      { name: 'mode', direction: 'in', type: 'Enum Input', description: 'Current mode: idle|active|complete (Source→Target)' },
+      { name: 'sliderValue', direction: 'out', type: 'Number Output', description: 'Slider position from Rive (Target→Source)' },
+      { name: 'activate', direction: 'in', type: 'Trigger', description: 'Activate the bench — idle→active' },
+      { name: 'complete', direction: 'in', type: 'Trigger', description: 'Mark complete — active→complete' },
+      { name: 'reset', direction: 'in', type: 'Trigger', description: 'Reset to idle from any state' },
+      { name: 'onComplete', direction: 'out', type: 'Rive Event', description: 'Fires when Rive animation reaches completion' },
+      { name: 'onSliderChange', direction: 'out', type: 'Rive Event', description: 'Fires when slider value changes inside Rive' },
+    ],
+    instruct: [
+      {
+        step: 'Create ViewModel',
+        detail: 'Add a ViewModel named TestBenchVM to the artboard. This VM covers all property types: Number, String, Boolean, Enum.',
+        verifies: [
+          'state:idle',
+          'state:active',
+          'state:complete',
+        ],
+      },
+      {
+        step: 'Add Number property (Source→Target)',
+        detail: 'Create property progress (Number, Source→Target, range 0–100). JS drives this value into Rive.',
+        verifies: [
+          'context.progress',
+          'vm:progress:number',
+          'vm-bind:progress->progress',
+        ],
+      },
+      {
+        step: 'Add String property (Source→Target)',
+        detail: 'Create property label (String, Source→Target). Bind to a Text Run to verify rendering.',
+        verifies: [
+          'context.label',
+          'vm:label:string',
+          'vm-bind:label->label',
+        ],
+      },
+      {
+        step: 'Add Boolean property (Source→Target)',
+        detail: 'Create property isActive (Boolean, Source→Target). Controls visibility or animation state.',
+        verifies: [
+          'context.isActive',
+          'vm:isActive:boolean',
+          'vm-bind:isActive->isActive',
+        ],
+      },
+      {
+        step: 'Add Enum property (Source→Target)',
+        detail: 'Create property mode (Enum: idle, active, complete, Source→Target). Mirrors machine state names.',
+        verifies: [
+          'context.mode',
+          'vm:mode:enum',
+          'vm-bind:mode->mode',
+        ],
+      },
+      {
+        step: 'Add Number property (Target→Source)',
+        detail: 'Create property sliderValue (Number, Target→Source, range 0–100). Rive drives this value back to JS via a draggable slider element.',
+        verifies: [
+          'context.sliderValue',
+          'vm:sliderValue:number',
+          'vm-bind:sliderValue->sliderValue',
+        ],
+      },
+      {
+        step: 'Add Triggers',
+        detail: 'Create triggers activate, complete, and reset (Source→Target). Wire to state machine transitions.',
+        verifies: [
+          'event:activate',
+          'event:complete',
+          'event:reset',
+          'event:activate->active',
+          'event:reset->idle',
+        ],
+      },
+      {
+        step: 'Wire State Machine',
+        detail: 'Create TestBenchSM with states: idle, active, complete. activate → idle→active, complete → active→complete, reset → any→idle.',
+        verifies: [
+          'trigger:activate',
+          'trigger:activate->Active',
+          'trigger:complete->Complete',
+          'vm-value:progress=100',
+        ],
+      },
+      {
+        step: 'Add Rive Events',
+        detail: 'Fire onComplete when SM reaches Complete state. Fire onSliderChange when slider value updates (Target→Source).',
+        verifies: [
+          'rive-event:onComplete',
+          'rive-event:onSliderChange',
+        ],
+      },
+      {
+        step: 'Add interactive slider',
+        detail: 'Add a draggable slider element named "Slider" that drives sliderValue (Target→Source). Verify hit testing and value propagation.',
+        verifies: [
+          'hit-test:Slider',
+          'visual:slider moves and updates sliderValue',
+          'visual:progress bar fills to 100%',
+          'visual:label text renders correctly',
+        ],
+      },
+    ],
+    readout: [
+      { label: 'state', source: 'state' },
+      { label: 'progress', source: 'progress' },
+      { label: 'isActive', source: 'active' },
+    ],
+  },
 ]
 
 export const DEFAULT_RECIPE_KEY = 'progress-bar'
@@ -420,4 +557,8 @@ export function getComponents(): Recipe[] {
 
 export function getApps(): Recipe[] {
   return recipes.filter((r) => r.type === 'app')
+}
+
+export function getTests(): Recipe[] {
+  return recipes.filter((r) => r.type === 'test')
 }

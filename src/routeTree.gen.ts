@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecipeKeyRouteImport } from './routes/$recipeKey'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TestIndexRouteImport } from './routes/test/index'
 import { Route as ComponentsIndexRouteImport } from './routes/components/index'
 import { Route as AppsIndexRouteImport } from './routes/apps/index'
+import { Route as TestTestKeyRouteImport } from './routes/test/$testKey'
 import { Route as ComponentsRecipeKeyRouteImport } from './routes/components/$recipeKey'
 import { Route as AppsAppKeyRouteImport } from './routes/apps/$appKey'
 
@@ -26,6 +28,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TestIndexRoute = TestIndexRouteImport.update({
+  id: '/test/',
+  path: '/test/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ComponentsIndexRoute = ComponentsIndexRouteImport.update({
   id: '/components/',
   path: '/components/',
@@ -34,6 +41,11 @@ const ComponentsIndexRoute = ComponentsIndexRouteImport.update({
 const AppsIndexRoute = AppsIndexRouteImport.update({
   id: '/apps/',
   path: '/apps/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestTestKeyRoute = TestTestKeyRouteImport.update({
+  id: '/test/$testKey',
+  path: '/test/$testKey',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComponentsRecipeKeyRoute = ComponentsRecipeKeyRouteImport.update({
@@ -52,16 +64,20 @@ export interface FileRoutesByFullPath {
   '/$recipeKey': typeof RecipeKeyRoute
   '/apps/$appKey': typeof AppsAppKeyRoute
   '/components/$recipeKey': typeof ComponentsRecipeKeyRoute
+  '/test/$testKey': typeof TestTestKeyRoute
   '/apps/': typeof AppsIndexRoute
   '/components/': typeof ComponentsIndexRoute
+  '/test/': typeof TestIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$recipeKey': typeof RecipeKeyRoute
   '/apps/$appKey': typeof AppsAppKeyRoute
   '/components/$recipeKey': typeof ComponentsRecipeKeyRoute
+  '/test/$testKey': typeof TestTestKeyRoute
   '/apps': typeof AppsIndexRoute
   '/components': typeof ComponentsIndexRoute
+  '/test': typeof TestIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,8 +85,10 @@ export interface FileRoutesById {
   '/$recipeKey': typeof RecipeKeyRoute
   '/apps/$appKey': typeof AppsAppKeyRoute
   '/components/$recipeKey': typeof ComponentsRecipeKeyRoute
+  '/test/$testKey': typeof TestTestKeyRoute
   '/apps/': typeof AppsIndexRoute
   '/components/': typeof ComponentsIndexRoute
+  '/test/': typeof TestIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -79,24 +97,30 @@ export interface FileRouteTypes {
     | '/$recipeKey'
     | '/apps/$appKey'
     | '/components/$recipeKey'
+    | '/test/$testKey'
     | '/apps/'
     | '/components/'
+    | '/test/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/$recipeKey'
     | '/apps/$appKey'
     | '/components/$recipeKey'
+    | '/test/$testKey'
     | '/apps'
     | '/components'
+    | '/test'
   id:
     | '__root__'
     | '/'
     | '/$recipeKey'
     | '/apps/$appKey'
     | '/components/$recipeKey'
+    | '/test/$testKey'
     | '/apps/'
     | '/components/'
+    | '/test/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -104,8 +128,10 @@ export interface RootRouteChildren {
   RecipeKeyRoute: typeof RecipeKeyRoute
   AppsAppKeyRoute: typeof AppsAppKeyRoute
   ComponentsRecipeKeyRoute: typeof ComponentsRecipeKeyRoute
+  TestTestKeyRoute: typeof TestTestKeyRoute
   AppsIndexRoute: typeof AppsIndexRoute
   ComponentsIndexRoute: typeof ComponentsIndexRoute
+  TestIndexRoute: typeof TestIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -124,6 +150,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/test/': {
+      id: '/test/'
+      path: '/test'
+      fullPath: '/test/'
+      preLoaderRoute: typeof TestIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/components/': {
       id: '/components/'
       path: '/components'
@@ -136,6 +169,13 @@ declare module '@tanstack/react-router' {
       path: '/apps'
       fullPath: '/apps/'
       preLoaderRoute: typeof AppsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/test/$testKey': {
+      id: '/test/$testKey'
+      path: '/test/$testKey'
+      fullPath: '/test/$testKey'
+      preLoaderRoute: typeof TestTestKeyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/components/$recipeKey': {
@@ -160,8 +200,10 @@ const rootRouteChildren: RootRouteChildren = {
   RecipeKeyRoute: RecipeKeyRoute,
   AppsAppKeyRoute: AppsAppKeyRoute,
   ComponentsRecipeKeyRoute: ComponentsRecipeKeyRoute,
+  TestTestKeyRoute: TestTestKeyRoute,
   AppsIndexRoute: AppsIndexRoute,
   ComponentsIndexRoute: ComponentsIndexRoute,
+  TestIndexRoute: TestIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

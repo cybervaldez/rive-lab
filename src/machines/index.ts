@@ -2,12 +2,14 @@ import { progressBarMachine } from './progressBar'
 import { toggleSwitchMachine } from './toggleSwitch'
 import { counterMachine } from './counter'
 import { inputDemoMachine } from './inputDemo'
+import { testBenchMachine } from './testBench'
 
 const machineMap: Record<string, any> = {
   'progress-bar': progressBarMachine,
   'toggle-switch': toggleSwitchMachine,
   counter: counterMachine,
   'input-demo': inputDemoMachine,
+  'test-bench': testBenchMachine,
 }
 
 export function getMachine(key: string) {
@@ -16,4 +18,4 @@ export function getMachine(key: string) {
   return machine
 }
 
-export { progressBarMachine, toggleSwitchMachine, counterMachine, inputDemoMachine }
+export { progressBarMachine, toggleSwitchMachine, counterMachine, inputDemoMachine, testBenchMachine }

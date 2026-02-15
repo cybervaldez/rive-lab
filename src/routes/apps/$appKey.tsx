@@ -9,11 +9,12 @@ import { useEventLog } from '../../lib/useEventLog'
 import { useResizable } from '../../lib/useResizable'
 import { useTheme } from '../../lib/useTheme'
 import { useChecklist } from '../../lib/useChecklist'
-import { useTestWizard } from '../../lib/useTestWizard'
+import { useTestWizard, readRiveUrl } from '../../lib/useTestWizard'
 import { extractMachineDoc } from '../../lib/extractMachineDoc'
 import { RecipePanel } from '../../components/RecipePanel'
 import { DebugPanel } from '../../components/DebugPanel'
 import { InputDemo } from '../../components/InputDemo'
+import { RiveRenderer } from '../../components/RiveRenderer'
 import type { DemoProps } from '../../components/types'
 
 const apps = getApps()
@@ -53,6 +54,7 @@ function AppDetailPage() {
   const [theme, toggleTheme] = useTheme()
   const [checkedSteps, toggleStep] = useChecklist(appKey)
   const [openPanel, setOpenPanel] = useState<'debug' | 'instruct' | null>(null)
+  const [renderer, setRenderer] = useState<'html' | 'rive'>('html')
 
   const { width: panelWidth, handleMouseDown } = useResizable()
   const eventLog = useEventLog()
@@ -79,6 +81,12 @@ function AppDetailPage() {
   // Test wizard
   const wizard = useTestWizard(appKey, machineId, app.instruct)
 
+  // Rive renderer
+  const riveUrl = readRiveUrl(appKey)
+  const riveMeta = machine.config?.meta as Record<string, any> | undefined
+  const riveViewModel = (riveMeta?.riveViewModel as string) ?? ''
+  const riveStateMachine = (riveMeta?.riveStateMachine as string) ?? ''
+
   // Close panel on Escape (only when mapper is not open)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,6 +95,14 @@ function AppDetailPage() {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [ctx.mapperOpen])
+
+  // Reset machine when switching renderers — Rive can't catch up to mid-flight state
+  const switchRenderer = (next: 'html' | 'rive') => {
+    if (next !== renderer) {
+      send({ type: 'reset' })
+      setRenderer(next)
+    }
+  }
 
   const demoProps: DemoProps = {
     state: snapshot.value as any,
@@ -145,14 +161,46 @@ function AppDetailPage() {
       {/* Stage + panel row */}
       <div className="app-body">
         <main className="app-stage" data-testid="app-stage">
-          {isRealMachine && appKey === 'input-demo' ? (
-            <InputDemo {...demoProps} />
-          ) : (
-            <div className="app-placeholder" data-testid="app-placeholder">
-              <span className="app-placeholder-icon">&#9654;</span>
-              <span className="app-placeholder-label">{app.name}</span>
-              <span className="app-placeholder-status">[{app.status}] — demo coming soon</span>
+          <div className="stage-header" data-testid="stage-header">
+            <div className="renderer-toggle" data-testid="renderer-toggle">
+              <button
+                className={`renderer-toggle-btn${renderer === 'html' ? ' renderer-toggle-btn--active' : ''}`}
+                data-testid="renderer-html"
+                onClick={() => switchRenderer('html')}
+              >
+                html
+              </button>
+              <button
+                className={`renderer-toggle-btn${renderer === 'rive' ? ' renderer-toggle-btn--active' : ''}`}
+                data-testid="renderer-rive"
+                onClick={() => switchRenderer('rive')}
+                disabled={!riveUrl}
+                title={!riveUrl ? 'Add .riv URL via test wizard' : riveUrl}
+              >
+                rive{riveUrl ? ' \u2713' : ''}
+              </button>
             </div>
+          </div>
+          {renderer === 'html' && (
+            <>
+              {isRealMachine && appKey === 'input-demo' ? (
+                <InputDemo {...demoProps} />
+              ) : (
+                <div className="app-placeholder" data-testid="app-placeholder">
+                  <span className="app-placeholder-icon">&#9654;</span>
+                  <span className="app-placeholder-label">{app.name}</span>
+                  <span className="app-placeholder-status">[{app.status}] — demo coming soon</span>
+                </div>
+              )}
+            </>
+          )}
+          {renderer === 'rive' && riveUrl && (
+            <RiveRenderer
+              {...demoProps}
+              riveUrl={riveUrl}
+              riveViewModel={riveViewModel}
+              riveStateMachine={riveStateMachine}
+            />
           )}
         </main>
 
@@ -301,7 +349,7 @@ function AppDetailPage() {
                 )
               })()}
               <div className="test-wizard-rive-section" data-testid="test-wizard-rive">
-                <span className="test-wizard-rive-label">rive file (future)</span>
+                <span className="test-wizard-rive-label">rive file url</span>
                 <input
                   className="test-wizard-rive-input"
                   data-testid="test-wizard-rive-input"
@@ -309,7 +357,6 @@ function AppDetailPage() {
                   placeholder="https://example.com/file.riv"
                   value={wizard.riveUrl}
                   onChange={(e) => wizard.updateRiveUrl(e.target.value)}
-                  disabled
                 />
               </div>
             </div>

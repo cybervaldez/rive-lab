@@ -1,7 +1,7 @@
 import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useMachine } from '@xstate/react'
-import { getComponents, DEFAULT_RECIPE_KEY } from '../../lib/recipes'
+import { getTests } from '../../lib/recipes'
 import { getMachine } from '../../machines'
 import { useXStateDebug } from '../../lib/useXStateDebug'
 import { useEventLog } from '../../lib/useEventLog'
@@ -12,29 +12,27 @@ import { useTestWizard, readRiveUrl } from '../../lib/useTestWizard'
 import { extractMachineDoc } from '../../lib/extractMachineDoc'
 import { RecipePanel } from '../../components/RecipePanel'
 import { DebugPanel } from '../../components/DebugPanel'
-import { ProgressBarDemo } from '../../components/ProgressBarDemo'
-import { ToggleSwitchDemo } from '../../components/ToggleSwitchDemo'
-import { CounterDemo } from '../../components/CounterDemo'
+import { TestBenchDemo } from '../../components/TestBenchDemo'
 import { RiveRenderer } from '../../components/RiveRenderer'
 import type { DemoProps } from '../../components/types'
 
-const components = getComponents()
+const tests = getTests()
 
-export const Route = createFileRoute('/components/$recipeKey')({
+export const Route = createFileRoute('/test/$testKey')({
   beforeLoad: ({ params }) => {
-    if (!components.some((r) => r.key === params.recipeKey)) {
-      throw redirect({ to: '/components/$recipeKey', params: { recipeKey: DEFAULT_RECIPE_KEY } })
+    if (!tests.some((r) => r.key === params.testKey)) {
+      throw redirect({ to: '/test' })
     }
   },
-  component: RecipePage,
+  component: TestDetailPage,
 })
 
-function RecipePage() {
-  const { recipeKey } = Route.useParams()
+function TestDetailPage() {
+  const { testKey } = Route.useParams()
   const navigate = useNavigate()
 
   const [theme, toggleTheme] = useTheme()
-  const [checkedSteps, toggleStep] = useChecklist(recipeKey)
+  const [checkedSteps, toggleStep] = useChecklist(testKey)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [openPanel, setOpenPanel] = useState<'debug' | 'instruct' | null>(null)
   const [renderer, setRenderer] = useState<'html' | 'rive'>('html')
@@ -42,11 +40,11 @@ function RecipePage() {
   const { width: panelWidth, handleMouseDown } = useResizable()
   const eventLog = useEventLog()
 
-  const recipe = components.find((r) => r.key === recipeKey)!
-  const currentIndex = components.findIndex((r) => r.key === recipeKey)
+  const test = tests.find((r) => r.key === testKey)!
+  const currentIndex = tests.findIndex((r) => r.key === testKey)
 
   // XState machine
-  const machine = getMachine(recipeKey)
+  const machine = getMachine(testKey)
   const [snapshot, send, actorRef] = useMachine(machine, { inspect: eventLog.inspect })
 
   // Expose to window.__xstate__
@@ -58,20 +56,20 @@ function RecipePage() {
   const machineDocData = extractMachineDoc(machine)
 
   // Test wizard
-  const wizard = useTestWizard(recipeKey, machineId, recipe.instruct)
+  const wizard = useTestWizard(testKey, machineId, test.instruct)
 
   // Rive renderer
-  const riveUrl = readRiveUrl(recipeKey)
+  const riveUrl = readRiveUrl(testKey)
   const riveMeta = machine.config?.meta as Record<string, any> | undefined
   const riveViewModel = (riveMeta?.riveViewModel as string) ?? ''
   const riveStateMachine = (riveMeta?.riveStateMachine as string) ?? ''
 
-  // Reset panels when recipeKey changes
+  // Reset panels when testKey changes
   useEffect(() => {
     setOpenPanel(null)
     setSidebarOpen(false)
     setRenderer('html')
-  }, [recipeKey])
+  }, [testKey])
 
   // Close overlays on Escape
   useEffect(() => {
@@ -85,15 +83,15 @@ function RecipePage() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Expose app state for pipeline testing (backward compat)
+  // Expose app state for pipeline testing
   useEffect(() => {
     ;(window as any).appState = { view: 'welcome', initialized: true }
   }, [])
 
   const paginate = useCallback(
     (dir: number) => {
-      const next = (currentIndex + dir + components.length) % components.length
-      navigate({ to: '/components/$recipeKey', params: { recipeKey: components[next].key } })
+      const next = (currentIndex + dir + tests.length) % tests.length
+      navigate({ to: '/test/$testKey', params: { testKey: tests[next].key } })
     },
     [currentIndex, navigate],
   )
@@ -104,7 +102,7 @@ function RecipePage() {
     if (source === 'progress') {
       if ('progress' in ctx) return String(ctx.progress)
       if ('count' in ctx) return String(ctx.count)
-      throw new Error(`No progress/count in context for ${recipeKey}`)
+      throw new Error(`No progress/count in context for ${testKey}`)
     }
     if (source === 'active') return String(ctx.isActive)
     throw new Error(`Unknown readout source: ${source}`)
@@ -130,10 +128,10 @@ function RecipePage() {
       <nav className="top-left-nav" data-testid="left-nav">
         <button
           className={`top-left-nav-link${sidebarOpen ? ' active' : ''}`}
-          data-testid="tab-components"
+          data-testid="tab-tests"
           onClick={() => setSidebarOpen((prev) => !prev)}
         >
-          components
+          test
         </button>
       </nav>
 
@@ -157,13 +155,13 @@ function RecipePage() {
 
       {/* Topbar */}
       <header className="app-topbar" data-testid="app-topbar">
-        <Link to="/components" className="app-topbar-back" data-testid="topbar-back">
-          &larr; components
+        <Link to="/test" className="app-topbar-back" data-testid="topbar-back">
+          &larr; test
         </Link>
         <span className="app-topbar-name" data-testid="topbar-name">
-          {recipe.name}
+          {test.name}
           <span className="app-topbar-readout" data-testid="state-readout">
-            {recipe.readout.map((item) => (
+            {test.readout.map((item) => (
               <span
                 key={item.source}
                 className="app-topbar-readout-item"
@@ -211,7 +209,7 @@ function RecipePage() {
           data-testid="sidebar-panel"
         >
           <div className="sidebar-panel-header">
-            <span className="sidebar-panel-title">components</span>
+            <span className="sidebar-panel-title">test</span>
             <button
               className="sidebar-panel-close"
               data-testid="sidebar-close"
@@ -221,18 +219,18 @@ function RecipePage() {
             </button>
           </div>
           <ul className="command-entries" data-testid="command-entries">
-            {components.map((r) => (
+            {tests.map((r) => (
               <li key={r.key}>
                 <Link
-                  to="/components/$recipeKey"
-                  params={{ recipeKey: r.key }}
-                  className={`command-entry${r.key === recipeKey ? ' active' : ''}`}
+                  to="/test/$testKey"
+                  params={{ testKey: r.key }}
+                  className={`command-entry${r.key === testKey ? ' active' : ''}`}
                   data-testid={`entry-${r.key}`}
                   data-recipe={r.key}
                   data-status={r.status}
                 >
                   <span className="command-entry-prefix">
-                    {r.key === recipeKey ? '>' : '\u00A0'}
+                    {r.key === testKey ? '>' : '\u00A0'}
                   </span>
                   <span className="command-entry-name">{r.key}</span>
                   <span className={`command-entry-badge command-entry-badge--${r.status}`}>
@@ -247,21 +245,21 @@ function RecipePage() {
 
           <div className="command-status" data-testid="command-status">
             <div className="command-status-line">
-              recipes:{' '}
+              tests:{' '}
               <span className="command-status-value" data-testid="status-recipes">
-                {components.length}
+                {tests.length}
               </span>
             </div>
             <div className="command-status-line">
               bindings:{' '}
               <span className="command-status-value" data-testid="status-bindings">
-                {recipe.bindings}
+                {test.bindings}
               </span>
             </div>
             <div className="command-status-line">
               states:{' '}
               <span className="command-status-value" data-testid="status-states">
-                {recipe.states}
+                {test.states}
               </span>
             </div>
           </div>
@@ -302,9 +300,7 @@ function RecipePage() {
                 <div className="stage-live" data-testid="stage-live">
                   {renderer === 'html' && (
                     <>
-                      {recipeKey === 'progress-bar' && <ProgressBarDemo {...demoProps} />}
-                      {recipeKey === 'toggle-switch' && <ToggleSwitchDemo {...demoProps} />}
-                      {recipeKey === 'counter' && <CounterDemo {...demoProps} />}
+                      {testKey === 'test-bench' && <TestBenchDemo {...demoProps} />}
                     </>
                   )}
                   {renderer === 'rive' && riveUrl && (
@@ -354,7 +350,7 @@ function RecipePage() {
                   )}
                   {openPanel === 'instruct' && (
                     <RecipePanel
-                      recipe={recipe}
+                      recipe={test}
                       machineDocData={machineDocData}
                       stateValue={stateValue}
                       checkedSteps={checkedSteps}
@@ -377,7 +373,7 @@ function RecipePage() {
             <div className="test-wizard-header">
               <span className="test-wizard-title">TEST WIZARD</span>
               <span className="test-wizard-step-counter">
-                step {wizard.stepIndex + 1}/{recipe.instruct.length}
+                step {wizard.stepIndex + 1}/{test.instruct.length}
               </span>
               <button className="test-wizard-close" data-testid="test-wizard-close" onClick={wizard.closeWizard}>
                 &times;
@@ -385,8 +381,8 @@ function RecipePage() {
             </div>
             <div className="test-wizard-body">
               <div className="test-wizard-step" data-testid="test-wizard-step">
-                <span className="test-wizard-step-title">{recipe.instruct[wizard.stepIndex].step}</span>
-                <span className="test-wizard-step-detail">{recipe.instruct[wizard.stepIndex].detail}</span>
+                <span className="test-wizard-step-title">{test.instruct[wizard.stepIndex].step}</span>
+                <span className="test-wizard-step-detail">{test.instruct[wizard.stepIndex].detail}</span>
               </div>
               {(() => {
                 const checks = wizard.results[wizard.stepIndex]
@@ -464,7 +460,7 @@ function RecipePage() {
                   className="demo-btn"
                   data-testid="test-wizard-next"
                   onClick={wizard.nextStep}
-                  disabled={wizard.stepIndex === recipe.instruct.length - 1}
+                  disabled={wizard.stepIndex === test.instruct.length - 1}
                 >
                   next &rarr;
                 </button>
@@ -484,10 +480,10 @@ function RecipePage() {
             &larr;
           </button>
           <div className="pagination-indicator" data-testid="pagination-indicator">
-            {components.map((r, i) => (
+            {tests.map((r, i) => (
               <span
                 key={i}
-                className={`pagination-dot${r.key === recipeKey ? ' active' : ''}`}
+                className={`pagination-dot${r.key === testKey ? ' active' : ''}`}
                 data-testid={`pagination-dot-${i}`}
               />
             ))}
