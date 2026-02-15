@@ -58,6 +58,23 @@ function Homepage() {
         </table>
       </section>
 
+      {/* Mix and match */}
+      <section className="homepage-section" data-testid="homepage-mix-match">
+        <h2 className="homepage-section-title">Mix and match</h2>
+        <p className="homepage-section-text">
+          For apps with multiple visual regions, the same XState machine
+          mediates all of them. Build the mapper in React while the receiver
+          is Rive, or vice versa &mdash; each side only talks to the machine,
+          never to each other.
+        </p>
+        <p className="homepage-section-text">
+          Ship incrementally: the AI builds a functional web version
+          first. Add a Rive renderer one piece at a time. The machine
+          doesn&rsquo;t change because it&rsquo;s the single source of
+          truth for both.
+        </p>
+      </section>
+
       {/* In the code */}
       <section className="homepage-section" data-testid="homepage-code">
         <h2 className="homepage-section-title">In the code</h2>

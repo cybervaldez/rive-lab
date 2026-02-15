@@ -100,7 +100,7 @@ When handing off to `/create-task`, include these rive-lab-specific sections:
 
 ### Scripting Assessment
 [Only if procedural visual patterns detected]
-| Visual Pattern | Rive Protocol | HTML/CSS Fallback | XState Impact |
+| Visual Pattern | Rive Protocol | HTML/CSS Renderer | XState Impact |
 |...             |...            |...                |...            |
 ```
 
@@ -120,5 +120,5 @@ The UX planner defines **what the user experiences**. The contract docs define *
 ## See Also
 
 - `techs/rive/README.md` — Data Binding protocol, scripting, communication channels
-- `techs/rive/scripting-activation.md` — Protocol selection, fallback patterns
+- `techs/rive/scripting-activation.md` — Protocol selection, renderer patterns
 - `techs/xstate/rive-wiring-conventions.md` — Naming, binding directions, handoff checklist

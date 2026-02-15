@@ -1,6 +1,6 @@
 # Rive Scripting Activation Guide
 
-When to activate Rive Scripting in a component, which protocol to use, and how to build the HTML/CSS fallback.
+When to activate Rive Scripting in a component, which protocol to use, and how to build the HTML/CSS renderer.
 
 ---
 
@@ -45,7 +45,7 @@ context: {
 }
 ```
 
-**HTML/CSS fallback:**
+**HTML/CSS renderer:**
 ```tsx
 // SVG for charts
 {data.map((v, i) => (
@@ -84,7 +84,7 @@ context: {
 }
 ```
 
-**HTML/CSS fallback:**
+**HTML/CSS renderer:**
 ```css
 /* SVG stroke animation */
 .progress-path {
@@ -123,7 +123,7 @@ context: {
 }
 ```
 
-**HTML/CSS fallback:**
+**HTML/CSS renderer:**
 ```css
 /* CSS Grid handles this natively */
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; }
@@ -152,14 +152,14 @@ context: {
 }
 ```
 
-**HTML/CSS fallback:**
+**HTML/CSS renderer:**
 ```tsx
 // JS formatting in the React component
 <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price / 100)}</span>
 <span>{(temperature - 32) * 5/9}°C</span>
 ```
 
-**Note:** For the HTML/CSS fallback, formatting lives in the React component. This is often simpler than a Rive Converter script.
+**Note:** For the HTML/CSS renderer, formatting lives in the React component. This is often simpler than a Rive Converter script.
 
 ---
 
@@ -182,7 +182,7 @@ guards: {
 }
 ```
 
-**HTML/CSS fallback:** XState guards handle this natively. No fallback needed — the XState standalone version already has the logic.
+**HTML/CSS renderer:** XState guards handle this natively. No separate renderer needed — the XState standalone version already has the logic.
 
 ---
 
@@ -204,7 +204,7 @@ on: {
 }
 ```
 
-**HTML/CSS fallback:**
+**HTML/CSS renderer:**
 ```typescript
 // CSS animation event or setTimeout approximation
 element.addEventListener('animationiteration', () => playSound());
@@ -230,7 +230,7 @@ actorRef.send({ type: 'SET_TEST_DATA', progress: 50, isActive: true });
 // Then listens for confirmation event from the Test script
 ```
 
-**HTML/CSS fallback:** Not applicable — this is a Rive-only testing concern. The HTML/CSS version is tested directly via the e2e pipeline.
+**HTML/CSS renderer:** Not applicable — this is a Rive-only testing concern. The HTML/CSS renderer is tested directly via the e2e pipeline.
 
 ---
 
@@ -260,7 +260,7 @@ Build a progress bar with confetti burst on completion.
 
 Scripting assessment:
 - Confetti burst: Rive Node script for particle spawning
-- HTML/CSS fallback: CSS @keyframes with JS-spawned <div> elements
+- HTML/CSS renderer: CSS @keyframes with JS-spawned <div> elements
 - XState impact: Add `celebrate` trigger event
 
 Everything else is standard Data Binding.
@@ -268,7 +268,7 @@ Everything else is standard Data Binding.
 
 This tells `/create-task` to:
 1. Build the XState machine with the `celebrate` event
-2. Build the HTML/CSS fallback with CSS particle animation
+2. Build the HTML/CSS renderer with CSS particle animation
 3. Note in the handoff that the Rive designer will need a Node script
 
 ---

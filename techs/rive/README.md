@@ -502,7 +502,7 @@ What the Rive developer needs to implement to match the XState spec:
 
 ## Internal Docs
 
-- `techs/rive/scripting-activation.md` — When to activate scripting, protocol selection, HTML/CSS fallbacks
+- `techs/rive/scripting-activation.md` — When to activate scripting, protocol selection, HTML/CSS renderers
 - `techs/xstate/rive-wiring-conventions.md` — Data Binding contract, naming, handoff checklist
 
 ## Resources

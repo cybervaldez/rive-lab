@@ -30,7 +30,7 @@ XState v5 is a state management library implementing finite state machines and t
 
 ## User's Use Case
 
-XState IS the app; it mirrors Rive's Data Binding so the pipeline can test everything. When the Rive developer delivers the `.riv` file, the swap is seamless because XState was already shaped like Rive. XState serves as a living spec for the Rive developer.
+XState IS the app; it mirrors Rive's Data Binding so the pipeline can test everything. React and Rive are both renderers for the same machine — when the Rive developer delivers the `.riv` file, it plugs in alongside (or replaces) the React renderer because XState was already shaped like Rive. XState serves as a living spec for the Rive developer.
 
 ---
 

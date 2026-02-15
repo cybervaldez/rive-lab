@@ -16,6 +16,17 @@ export interface ReadoutItem {
   source: 'state' | 'progress' | 'active'
 }
 
+export interface ConceptRegion {
+  name: string
+  properties: string[]
+  description: string
+}
+
+export interface RecipeConcept {
+  summary: string
+  regions?: ConceptRegion[]
+}
+
 export interface Recipe {
   key: string
   name: string
@@ -31,6 +42,7 @@ export interface Recipe {
   events: RiveEvent[]
   instruct: InstructStep[]
   readout: ReadoutItem[]
+  concept?: RecipeConcept
 }
 
 export const recipes: Recipe[] = [
@@ -230,6 +242,90 @@ export const recipes: Recipe[] = [
       { label: 'count', source: 'progress' },
       { label: 'isActive', source: 'active' },
     ],
+  },
+  {
+    key: 'input-demo',
+    name: 'INPUT DEMO',
+    type: 'app',
+    state: 'active',
+    progress: 0,
+    active: false,
+    status: 'wip',
+    bindings: 6,
+    states: 3,
+    triggers: 6,
+    contract: [
+      { xstate: 'context.bindings', rive: 'ViewModel property bindings (Object)' },
+      { xstate: 'context.activeInputs', rive: 'ViewModel property activeInputs (List)' },
+      { xstate: 'context.mapperOpen', rive: 'ViewModel property mapperOpen (Boolean)' },
+      { xstate: 'event: KEY_DOWN', rive: 'Trigger KEY_DOWN' },
+      { xstate: 'event: KEY_UP', rive: 'Trigger KEY_UP' },
+      { xstate: 'event: OPEN_MAPPER', rive: 'Trigger OPEN_MAPPER' },
+      { xstate: 'event: CLOSE_MAPPER', rive: 'Trigger CLOSE_MAPPER' },
+      { xstate: 'event: START_REBIND', rive: 'Trigger START_REBIND' },
+      { xstate: 'event: reset', rive: 'Trigger reset' },
+      { xstate: 'state: active', rive: 'State: active' },
+      { xstate: 'state: {configuring: idle}', rive: 'State: configuring.idle' },
+      { xstate: 'state: {configuring: listening}', rive: 'State: configuring.listening' },
+    ],
+    events: [
+      { name: 'bindings', direction: 'in', type: 'Object Input', description: 'Action-to-key mapping' },
+      { name: 'activeInputs', direction: 'in', type: 'List Input', description: 'Currently held actions' },
+      { name: 'mapperOpen', direction: 'in', type: 'Boolean Input', description: 'Mapper overlay visibility' },
+      { name: 'KEY_DOWN', direction: 'in', type: 'Trigger', description: 'Key pressed' },
+      { name: 'KEY_UP', direction: 'in', type: 'Trigger', description: 'Key released' },
+      { name: 'OPEN_MAPPER', direction: 'in', type: 'Trigger', description: 'Open the key mapper overlay' },
+      { name: 'CLOSE_MAPPER', direction: 'in', type: 'Trigger', description: 'Close the key mapper overlay' },
+      { name: 'START_REBIND', direction: 'in', type: 'Trigger', description: 'Start rebinding an action' },
+      { name: 'reset', direction: 'in', type: 'Trigger', description: 'Reset all bindings to defaults' },
+    ],
+    instruct: [
+      {
+        step: 'Create ViewModel',
+        detail: 'Add a ViewModel named InputDemoVM to the artboard. The XState machine mediates both visual areas — the React renderer works standalone; add the Rive renderer when ready.',
+        verifies: ['state:active'],
+      },
+      {
+        step: 'Add bindings property',
+        detail: 'Create property bindings (Object, Source→Target) to receive action-to-key map',
+        verifies: ['context.bindings'],
+      },
+      {
+        step: 'Add activeInputs property',
+        detail: 'Create property activeInputs (List, Source→Target) to show held actions',
+        verifies: ['context.activeInputs'],
+      },
+      {
+        step: 'Add mapperOpen property',
+        detail: 'Create property mapperOpen (Boolean, Source→Target) to toggle overlay visibility',
+        verifies: ['context.mapperOpen'],
+      },
+      {
+        step: 'Create State Machine',
+        detail: 'Name it InputDemoSM with states: active, configuring (idle, listening)',
+        verifies: ['state:active', 'state:{configuring:idle}', 'state:{configuring:listening}'],
+      },
+      {
+        step: 'Wire input events',
+        detail: 'KEY_DOWN/KEY_UP in active state update activeInputs; OPEN_MAPPER transitions to configuring',
+        verifies: ['event:KEY_DOWN', 'event:KEY_UP', 'event:OPEN_MAPPER'],
+      },
+      {
+        step: 'Wire rebind events',
+        detail: 'START_REBIND → listening, KEY_DOWN in listening saves binding, CANCEL_REBIND/CLOSE_MAPPER returns',
+        verifies: ['event:START_REBIND', 'event:CLOSE_MAPPER'],
+      },
+    ],
+    readout: [
+      { label: 'state', source: 'state' },
+    ],
+    concept: {
+      summary: 'One XState machine drives two independent visual regions. The receiver shows which keys are active. The mapper overlay lets users rebind keys. Both regions read from the same machine context — they never communicate directly.',
+      regions: [
+        { name: 'Receiver', properties: ['bindings', 'activeInputs'], description: 'Shows action indicators that light up on key press' },
+        { name: 'Mapper Overlay', properties: ['mapperOpen', 'listeningAction', 'bindings'], description: 'Modal for viewing and rebinding key assignments' },
+      ],
+    },
   },
   {
     key: 'media-player',

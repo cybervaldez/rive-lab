@@ -14,9 +14,15 @@ to `agent-browser snapshot`. XState solves this by acting as the single brain �
 every boundary crossing is logged via a 4-point handshake, so the pipeline can
 prove every link in the chain is alive (see `techs/xstate/README.md`).
 
-Dual-mode: The XState+HTML+CSS version works in production standalone.
-Rive is an upgrade path, not a requirement. If Rive doesn't load, the
-XState app is the fallback.
+Dual-mode: The XState+HTML+CSS version is the default renderer,
+production-ready on its own. Rive is an additional renderer, not a
+requirement. The machine doesn't care what renders it.
+
+Mix-and-match: For multi-region apps (e.g. a keyboard mapper + input
+receiver), the XState machine mediates both visual areas. Each side reads
+context and sends events — they never talk to each other directly. This
+means you can build one region in React and the other in Rive, or both in
+either. Add Rive renderers independently as artboards become available.
 
 ### The Flow
 
@@ -28,7 +34,7 @@ XState app is the fallback.
               handoff instructions                (production-ready)
                      |
                      v
-              Rive developer builds .riv ──> Swap in ──> Same tests pass
+              Rive developer builds .riv ──> Add renderer ──> Same tests pass
 ```
 
 ### XState <-> Rive Contract
@@ -177,7 +183,7 @@ rive-lab/
 ## Further Reading
 
 - techs/rive/README.md — Rive Data Binding protocol, scripting, sender/receiver logging, handoff checklist
-- techs/rive/scripting-activation.md — When to activate Rive Scripting, protocol selection, HTML/CSS fallbacks
+- techs/rive/scripting-activation.md — When to activate Rive Scripting, protocol selection, HTML/CSS renderers
 - techs/xstate/README.md — XState machine patterns, round-trip logging convention, diagnosis table
 - techs/xstate/rive-wiring-conventions.md — Rive wiring conventions, naming, handoff checklist
 - .claude/skills/SKILL_INDEX.md — Full pipeline reference

@@ -1,12 +1,43 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useMachine } from '@xstate/react'
+import { setup } from 'xstate'
 import { getApps } from '../../lib/recipes'
+import { getMachine } from '../../machines'
+import { useXStateDebug } from '../../lib/useXStateDebug'
+import { useEventLog } from '../../lib/useEventLog'
+import { useResizable } from '../../lib/useResizable'
 import { useTheme } from '../../lib/useTheme'
-import { usePinned } from '../../lib/usePinned'
 import { useChecklist } from '../../lib/useChecklist'
 import { useTestWizard } from '../../lib/useTestWizard'
+import { extractMachineDoc } from '../../lib/extractMachineDoc'
+import { RecipePanel } from '../../components/RecipePanel'
+import { DebugPanel } from '../../components/DebugPanel'
+import { InputDemo } from '../../components/InputDemo'
+import type { DemoProps } from '../../components/types'
 
 const apps = getApps()
+
+// No-op machine for apps that don't have a real machine yet
+const nullMachine = setup({
+  types: {
+    context: {} as Record<string, never>,
+    events: {} as { type: 'reset' },
+  },
+}).createMachine({
+  id: 'NullSM',
+  initial: 'idle',
+  context: {},
+  states: { idle: {} },
+})
+
+function getAppMachine(appKey: string) {
+  try {
+    return getMachine(appKey)
+  } catch {
+    return nullMachine
+  }
+}
 
 export const Route = createFileRoute('/apps/$appKey')({
   beforeLoad: ({ params }) => {
@@ -20,44 +51,66 @@ export const Route = createFileRoute('/apps/$appKey')({
 function AppDetailPage() {
   const { appKey } = Route.useParams()
   const [theme, toggleTheme] = useTheme()
-  const [isPinned, togglePinned] = usePinned()
   const [checkedSteps, toggleStep] = useChecklist(appKey)
-  const [openPanel, setOpenPanel] = useState<'instruct' | null>(() =>
-    isPinned ? 'instruct' : null,
-  )
-  const lastPanelRef = useRef<'instruct'>('instruct')
+  const [openPanel, setOpenPanel] = useState<'debug' | 'instruct' | null>(null)
+
+  const { width: panelWidth, handleMouseDown } = useResizable()
+  const eventLog = useEventLog()
 
   const app = apps.find((r) => r.key === appKey)!
-  const [machineState] = useState(app.state)
 
-  // Test wizard (no machine for apps yet, use appKey as machineId)
-  const wizard = useTestWizard(appKey, appKey, app.instruct)
+  // XState machine
+  const machine = getAppMachine(appKey)
+  const isRealMachine = machine !== nullMachine
+  const [snapshot, send, actorRef] = useMachine(machine, { inspect: eventLog.inspect })
 
-  // Track last opened panel so content stays visible during slide-out
-  useEffect(() => {
-    if (openPanel) lastPanelRef.current = openPanel
-  }, [openPanel])
+  // Expose to window.__xstate__ when a real machine exists
+  const machineId = machine.id
+  useXStateDebug(machineId, actorRef)
 
-  const displayPanel = openPanel ?? lastPanelRef.current
-  const pinnedOpen = isPinned && openPanel !== null
+  const stateValue = typeof snapshot.value === 'string'
+    ? snapshot.value
+    : JSON.stringify(snapshot.value)
+  const ctx = snapshot.context as Record<string, any>
 
-  // Close panel on Escape
+  // Machine doc data for panels
+  const machineDocData = isRealMachine ? extractMachineDoc(machine) : null
+
+  // Test wizard
+  const wizard = useTestWizard(appKey, machineId, app.instruct)
+
+  // Close panel on Escape (only when mapper is not open)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenPanel(null)
+      if (e.key === 'Escape' && !ctx.mapperOpen) setOpenPanel(null)
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [ctx.mapperOpen])
+
+  const demoProps: DemoProps = {
+    state: snapshot.value as any,
+    context: ctx,
+    send,
+  }
 
   return (
     <div className="app-theater" data-testid="app-theater">
-      {/* Floating right-edge instructions toggle */}
+      {/* Floating right-edge panel toggles */}
       <nav className="top-right-nav" data-testid="right-nav">
+        {isRealMachine && machineDocData && (
+          <button
+            className={`top-right-nav-link${openPanel === 'debug' ? ' active' : ''}`}
+            data-testid="tab-debug"
+            onClick={() => setOpenPanel((prev) => (prev === 'debug' ? null : 'debug'))}
+          >
+            debug
+          </button>
+        )}
         <button
-          className={`top-right-nav-link${openPanel !== null ? ' active' : ''}`}
+          className={`top-right-nav-link${openPanel === 'instruct' ? ' active' : ''}`}
           data-testid="tab-panel"
-          onClick={() => setOpenPanel((prev) => (prev !== null ? null : 'instruct'))}
+          onClick={() => setOpenPanel((prev) => (prev === 'instruct' ? null : 'instruct'))}
         >
           instructions
         </button>
@@ -70,14 +123,9 @@ function AppDetailPage() {
         </Link>
         <span className="app-topbar-name" data-testid="app-name">
           {app.name}
-          <button
-            className="topbar-docs-pill disabled"
-            data-testid="topbar-docs"
-            disabled
-          >
-            docs
-          </button>
-          <span className="app-topbar-state" data-testid="app-state">{machineState}</span>
+          <span className="app-topbar-state" data-testid="app-state">
+            {isRealMachine ? stateValue : app.state}
+          </span>
         </span>
         <button
           className="theme-toggle"
@@ -94,75 +142,96 @@ function AppDetailPage() {
         </button>
       </header>
 
-      {/* Backdrop — closes panel on click outside */}
-      {openPanel !== null && !isPinned && (
-        <div
-          className="panel-backdrop"
-          data-testid="panel-backdrop"
-          onClick={() => setOpenPanel(null)}
-        />
-      )}
-
-      {/* Stage + pinned panel row */}
+      {/* Stage + panel row */}
       <div className="app-body">
         <main className="app-stage" data-testid="app-stage">
-          <div className="app-placeholder" data-testid="app-placeholder">
-            <span className="app-placeholder-icon">&#9654;</span>
-            <span className="app-placeholder-label">{app.name}</span>
-            <span className="app-placeholder-status">[{app.status}] — demo coming soon</span>
-          </div>
+          {isRealMachine && appKey === 'input-demo' ? (
+            <InputDemo {...demoProps} />
+          ) : (
+            <div className="app-placeholder" data-testid="app-placeholder">
+              <span className="app-placeholder-icon">&#9654;</span>
+              <span className="app-placeholder-label">{app.name}</span>
+              <span className="app-placeholder-status">[{app.status}] — demo coming soon</span>
+            </div>
+          )}
         </main>
 
-        {/* Overlay Panel — slides in from right, same as component page */}
-        <div
-          className={`overlay-panel${openPanel ? ' overlay-panel--open' : ''}${pinnedOpen ? ' overlay-panel--pinned' : ''}`}
-          data-testid="overlay-panel"
-        >
-          <div className="overlay-header">
-            <button
-              className="overlay-close"
-              data-testid="overlay-close"
-              onClick={() => setOpenPanel(null)}
+        {/* Right Panel — inline flex child */}
+        {openPanel !== null && (
+          <>
+            <div
+              className="resize-handle"
+              data-testid="resize-handle"
+              onMouseDown={handleMouseDown}
+            />
+            <div
+              className="right-panel"
+              data-testid="right-panel"
+              style={{ width: panelWidth }}
             >
-              &times;
-            </button>
-            <button
-              className="overlay-pin"
-              data-testid="overlay-pin"
-              onClick={togglePinned}
-              aria-label={isPinned ? 'Unpin panel' : 'Pin panel'}
-            >
-              {isPinned ? '\u229F' : '\u229E'}
-            </button>
-          </div>
-          <div className="overlay-body">
-            <div className="instruct-panel" data-testid="instruct-panel">
-              <ol className="instruct-list" data-testid="instruct-list">
-                {app.instruct.map((item, i) => (
-                  <li
-                    key={i}
-                    className={`instruct-step${checkedSteps.has(i) ? ' instruct-step--checked' : ''}`}
-                    data-testid={`instruct-step-${i}`}
-                    onClick={() => toggleStep(i)}
-                  >
-                    <span className="instruct-step-title">{item.step}</span>
-                    <span className="instruct-step-detail">{item.detail}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="instruct-hint" data-testid="instruct-hint">
-                Click on an item to mark it as complete
-              </p>
-              <button
-                className="instruct-test-btn"
-                data-testid="instruct-test-btn"
-                onClick={wizard.openWizard}
-              >
-                test
-              </button>
+              <div className="right-panel-header">
+                <button
+                  className="right-panel-close"
+                  data-testid="right-panel-close"
+                  onClick={() => setOpenPanel(null)}
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="right-panel-body">
+                {openPanel === 'debug' && machineDocData && (
+                  <DebugPanel
+                    machineDocData={machineDocData}
+                    stateValue={stateValue}
+                    context={ctx}
+                    eventLogEntries={eventLog.entries}
+                    onClearEventLog={eventLog.clear}
+                  />
+                )}
+                {openPanel === 'instruct' && (
+                  <>
+                    {machineDocData ? (
+                      <RecipePanel
+                        recipe={app}
+                        machineDocData={machineDocData}
+                        stateValue={stateValue}
+                        checkedSteps={checkedSteps}
+                        toggleStep={toggleStep}
+                        onOpenWizard={wizard.openWizard}
+                      />
+                    ) : (
+                      <div className="instruct-panel" data-testid="instruct-panel">
+                        <ol className="instruct-list" data-testid="instruct-list">
+                          {app.instruct.map((item, i) => (
+                            <li
+                              key={i}
+                              className={`instruct-step${checkedSteps.has(i) ? ' instruct-step--checked' : ''}`}
+                              data-testid={`instruct-step-${i}`}
+                              onClick={() => toggleStep(i)}
+                            >
+                              <span className="instruct-step-title">{item.step}</span>
+                              <span className="instruct-step-detail">{item.detail}</span>
+                            </li>
+                          ))}
+                        </ol>
+                        <p className="instruct-hint" data-testid="instruct-hint">
+                          Click on an item to mark it as complete
+                        </p>
+                        <button
+                          className="instruct-test-btn"
+                          data-testid="instruct-test-btn"
+                          onClick={wizard.openWizard}
+                        >
+                          test
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       {/* Test Wizard Modal */}

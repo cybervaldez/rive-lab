@@ -1,6 +1,6 @@
 # Rive — Create Task Reference
 
-When implementing a rive-lab recipe, `/create-task` uses this reference to scaffold the correct XState machine structure, HTML/CSS fallback, and test file based on whether the recipe is a **component** or **app**.
+When implementing a rive-lab recipe, `/create-task` uses this reference to scaffold the correct XState machine structure, HTML/CSS renderer, and test file based on whether the recipe is a **component** or **app**.
 
 ---
 
@@ -49,7 +49,7 @@ const machine = setup({
 **File structure:**
 ```
 src/machines/{name}.ts        # XState machine with meta block
-src/components/{Name}Demo.tsx  # HTML/CSS fallback + demo controls
+src/components/{Name}Demo.tsx  # HTML/CSS renderer + demo controls
 ```
 
 **Recipe data fields:**
@@ -116,7 +116,7 @@ const machine = setup({
 **File structure:**
 ```
 src/machines/{name}.ts        # XState machine with parallel regions
-src/components/{Name}Demo.tsx  # Multi-panel HTML/CSS fallback
+src/components/{Name}Demo.tsx  # Multi-panel HTML/CSS renderer
 ```
 
 **Recipe data fields:**
@@ -173,12 +173,12 @@ When `/create-task` implements a recipe, verify:
 
 If `/ux-planner` included a Scripting Assessment in the handoff:
 
-1. **HTML/CSS fallback** — implement the procedural visual using the specified fallback approach (SVG, CSS animations, canvas, JS formatting)
+1. **HTML/CSS renderer** — implement the procedural visual using the specified renderer approach (SVG, CSS animations, canvas, JS formatting)
 2. **XState machine** — add any additional context properties or events the script needs
 3. **Instruct steps** — add a step noting the Rive designer will need a script (e.g. "Add Node script for confetti burst on completion state")
 4. **Don't write Luau** — the script code is the Rive designer's concern
 
-See `techs/rive/scripting-activation.md` for protocol details and fallback patterns.
+See `techs/rive/scripting-activation.md` for protocol details and renderer patterns.
 
 ---
 
@@ -201,6 +201,6 @@ export const machines: Record<string, AnyStateMachine> = {
 ## See Also
 
 - `techs/rive/README.md` — Data Binding protocol, scripting, communication channels
-- `techs/rive/scripting-activation.md` — Protocol selection, fallback patterns
+- `techs/rive/scripting-activation.md` — Protocol selection, renderer patterns
 - `techs/xstate/rive-wiring-conventions.md` — Naming, binding directions, handoff checklist
 - `techs/xstate/README.md` — XState patterns, parallel states, round-trip logging

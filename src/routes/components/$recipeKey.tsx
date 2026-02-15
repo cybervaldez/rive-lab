@@ -4,20 +4,20 @@ import { useMachine } from '@xstate/react'
 import { getComponents, DEFAULT_RECIPE_KEY } from '../../lib/recipes'
 import { getMachine } from '../../machines'
 import { useXStateDebug } from '../../lib/useXStateDebug'
-import { createXStateInspector } from '../../lib/xstateLogger'
+import { useEventLog } from '../../lib/useEventLog'
+import { useResizable } from '../../lib/useResizable'
 import { useTheme } from '../../lib/useTheme'
-import { usePinned } from '../../lib/usePinned'
 import { useChecklist } from '../../lib/useChecklist'
 import { useTestWizard } from '../../lib/useTestWizard'
 import { extractMachineDoc } from '../../lib/extractMachineDoc'
-import { MachineDoc } from '../../components/MachineDoc'
+import { RecipePanel } from '../../components/RecipePanel'
+import { DebugPanel } from '../../components/DebugPanel'
 import { ProgressBarDemo } from '../../components/ProgressBarDemo'
 import { ToggleSwitchDemo } from '../../components/ToggleSwitchDemo'
 import { CounterDemo } from '../../components/CounterDemo'
 import type { DemoProps } from '../../components/types'
 
 const components = getComponents()
-const inspector = createXStateInspector()
 
 export const Route = createFileRoute('/components/$recipeKey')({
   beforeLoad: ({ params }) => {
@@ -33,21 +33,19 @@ function RecipePage() {
   const navigate = useNavigate()
 
   const [theme, toggleTheme] = useTheme()
-  const [isPinned, togglePinned] = usePinned()
   const [checkedSteps, toggleStep] = useChecklist(recipeKey)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [openPanel, setOpenPanel] = useState<'instruct' | null>(() =>
-    isPinned ? 'instruct' : null,
-  )
-  const lastPanelRef = useRef<'instruct'>('instruct')
-  const [showDocs, setShowDocs] = useState(false)
+  const [openPanel, setOpenPanel] = useState<'debug' | 'instruct' | null>(null)
+
+  const { width: panelWidth, handleMouseDown } = useResizable()
+  const eventLog = useEventLog()
 
   const recipe = components.find((r) => r.key === recipeKey)!
   const currentIndex = components.findIndex((r) => r.key === recipeKey)
 
   // XState machine
   const machine = getMachine(recipeKey)
-  const [snapshot, send, actorRef] = useMachine(machine, { inspect: inspector })
+  const [snapshot, send, actorRef] = useMachine(machine, { inspect: eventLog.inspect })
 
   // Expose to window.__xstate__
   const machineId = machine.id
@@ -60,19 +58,11 @@ function RecipePage() {
   // Test wizard
   const wizard = useTestWizard(recipeKey, machineId, recipe.instruct)
 
-  // Track last opened panel so content stays visible during slide-out
-  useEffect(() => {
-    if (openPanel) lastPanelRef.current = openPanel
-  }, [openPanel])
-
-  const displayPanel = openPanel ?? lastPanelRef.current
-  const pinnedOpen = isPinned && openPanel !== null
-
   // Reset panels when recipeKey changes
   useEffect(() => {
-    if (!isPinned) setOpenPanel(null)
+    setOpenPanel(null)
     setSidebarOpen(false)
-  }, [recipeKey, isPinned])
+  }, [recipeKey])
 
   // Close overlays on Escape
   useEffect(() => {
@@ -130,12 +120,19 @@ function RecipePage() {
         </button>
       </nav>
 
-      {/* Right-edge instructions toggle */}
+      {/* Right-edge panel toggles */}
       <nav className="top-right-nav" data-testid="right-nav">
         <button
-          className={`top-right-nav-link${openPanel !== null ? ' active' : ''}`}
+          className={`top-right-nav-link${openPanel === 'debug' ? ' active' : ''}`}
+          data-testid="tab-debug"
+          onClick={() => setOpenPanel((prev) => (prev === 'debug' ? null : 'debug'))}
+        >
+          debug
+        </button>
+        <button
+          className={`top-right-nav-link${openPanel === 'instruct' ? ' active' : ''}`}
           data-testid="tab-panel"
-          onClick={() => setOpenPanel((prev) => (prev !== null ? null : 'instruct'))}
+          onClick={() => setOpenPanel((prev) => (prev === 'instruct' ? null : 'instruct'))}
         >
           instructions
         </button>
@@ -148,13 +145,6 @@ function RecipePage() {
         </Link>
         <span className="app-topbar-name" data-testid="topbar-name">
           {recipe.name}
-          <button
-            className={`topbar-docs-pill${showDocs ? ' active' : ''}`}
-            data-testid="topbar-docs"
-            onClick={() => setShowDocs((prev) => !prev)}
-          >
-            docs
-          </button>
           <span className="app-topbar-readout" data-testid="state-readout">
             {recipe.readout.map((item) => (
               <span
@@ -185,14 +175,13 @@ function RecipePage() {
         </button>
       </header>
 
-      {/* Backdrop — closes panels on click outside */}
-      {(sidebarOpen || (openPanel !== null && !isPinned)) && (
+      {/* Backdrop — closes sidebar on click outside */}
+      {sidebarOpen && (
         <div
           className="panel-backdrop"
           data-testid="panel-backdrop"
           onClick={() => {
             setSidebarOpen(false)
-            if (!isPinned) setOpenPanel(null)
           }}
         />
       )}
@@ -267,76 +256,67 @@ function RecipePage() {
 
         {/* Theater Area */}
         <main
-          className="theater-area"
+          className={`theater-area${openPanel !== null ? ' theater-area--panel-open' : ''}`}
           data-testid="theater-area"
-          onClick={(e) => { if (showDocs && e.target === e.currentTarget) setShowDocs(false) }}
         >
-          <div className={`theater-content${showDocs ? ' theater-content--docs' : ''}`}>
-            <div className={`stage${showDocs ? ' stage--docs' : ''}`} data-testid="stage">
+          <div className="theater-content">
+            <div className="stage" data-testid="stage">
               <div className="stage-body" data-testid="stage-body-demo">
-                {showDocs ? (
-                  <MachineDoc data={machineDocData} stateValue={stateValue} onClose={() => setShowDocs(false)} />
-                ) : (
-                  <div className="stage-live" data-testid="stage-live">
-                    {recipeKey === 'progress-bar' && <ProgressBarDemo {...demoProps} />}
-                    {recipeKey === 'toggle-switch' && <ToggleSwitchDemo {...demoProps} />}
-                    {recipeKey === 'counter' && <CounterDemo {...demoProps} />}
-                  </div>
-                )}
+                <div className="stage-live" data-testid="stage-live">
+                  {recipeKey === 'progress-bar' && <ProgressBarDemo {...demoProps} />}
+                  {recipeKey === 'toggle-switch' && <ToggleSwitchDemo {...demoProps} />}
+                  {recipeKey === 'counter' && <CounterDemo {...demoProps} />}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Overlay Panel — slides in from right */}
-          <div
-            className={`overlay-panel${openPanel ? ' overlay-panel--open' : ''}${pinnedOpen ? ' overlay-panel--pinned' : ''}`}
-            data-testid="overlay-panel"
-          >
-            <div className="overlay-header">
-              <button
-                className="overlay-close"
-                data-testid="overlay-close"
-                onClick={() => setOpenPanel(null)}
+          {/* Right Panel — inline flex child */}
+          {openPanel !== null && (
+            <>
+              <div
+                className="resize-handle"
+                data-testid="resize-handle"
+                onMouseDown={handleMouseDown}
+              />
+              <div
+                className="right-panel"
+                data-testid="right-panel"
+                style={{ width: panelWidth }}
               >
-                &times;
-              </button>
-              <button
-                className="overlay-pin"
-                data-testid="overlay-pin"
-                onClick={togglePinned}
-                aria-label={isPinned ? 'Unpin panel' : 'Pin panel'}
-              >
-                {isPinned ? '\u229F' : '\u229E'}
-              </button>
-            </div>
-            <div className="overlay-body">
-              <div className="instruct-panel" data-testid="instruct-panel">
-                <ol className="instruct-list" data-testid="instruct-list">
-                  {recipe.instruct.map((item, i) => (
-                    <li
-                      key={i}
-                      className={`instruct-step${checkedSteps.has(i) ? ' instruct-step--checked' : ''}`}
-                      data-testid={`instruct-step-${i}`}
-                      onClick={() => toggleStep(i)}
-                    >
-                      <span className="instruct-step-title">{item.step}</span>
-                      <span className="instruct-step-detail">{item.detail}</span>
-                    </li>
-                  ))}
-                </ol>
-                <p className="instruct-hint" data-testid="instruct-hint">
-                  Click on an item to mark it as complete
-                </p>
-                <button
-                  className="instruct-test-btn"
-                  data-testid="instruct-test-btn"
-                  onClick={wizard.openWizard}
-                >
-                  test
-                </button>
+                <div className="right-panel-header">
+                  <button
+                    className="right-panel-close"
+                    data-testid="right-panel-close"
+                    onClick={() => setOpenPanel(null)}
+                  >
+                    &times;
+                  </button>
+                </div>
+                <div className="right-panel-body">
+                  {openPanel === 'debug' && (
+                    <DebugPanel
+                      machineDocData={machineDocData}
+                      stateValue={stateValue}
+                      context={ctx}
+                      eventLogEntries={eventLog.entries}
+                      onClearEventLog={eventLog.clear}
+                    />
+                  )}
+                  {openPanel === 'instruct' && (
+                    <RecipePanel
+                      recipe={recipe}
+                      machineDocData={machineDocData}
+                      stateValue={stateValue}
+                      checkedSteps={checkedSteps}
+                      toggleStep={toggleStep}
+                      onOpenWizard={wizard.openWizard}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </main>
       </div>
 

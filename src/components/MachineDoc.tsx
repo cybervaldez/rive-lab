@@ -1,4 +1,5 @@
 import type { MachineDocData } from '../lib/extractMachineDoc'
+import { getActiveStatePaths } from '../lib/stateUtils'
 
 interface MachineDocProps {
   data: MachineDocData
@@ -7,6 +8,8 @@ interface MachineDocProps {
 }
 
 export function MachineDoc({ data, stateValue, onClose }: MachineDocProps) {
+  const activePaths = getActiveStatePaths(stateValue)
+
   // Group transitions by source state
   const transitionGroups: Record<string, MachineDocData['transitions']> = {}
   for (const t of data.transitions) {
@@ -71,10 +74,14 @@ export function MachineDoc({ data, stateValue, onClose }: MachineDocProps) {
           {/* States */}
           <div className="t-section-header" data-testid="section-states">&gt; States</div>
           {data.states.map((s) => {
-            const isActive = s.name === stateValue
+            const isActive = activePaths.has(s.name)
             return (
-              <div className="t-state-line" key={s.name} data-testid={`state-${s.name}`}>
-                <span className="t-indent" />
+              <div
+                className="t-state-line"
+                key={s.name}
+                data-testid={`state-${s.name}`}
+                style={{ paddingLeft: `${(s.depth + 1) * 1}rem` }}
+              >
                 <span className={`t-state-dot${isActive ? ' t-state-dot--active' : ''}`}>
                   &#9679;
                 </span>

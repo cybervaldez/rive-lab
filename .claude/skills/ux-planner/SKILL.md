@@ -249,7 +249,7 @@ After finalizing the UX recommendation but **before handoff**, scan the interact
 
 ### Detection Heuristics
 
-| Signal in UX Description | What It Implies | Rive Protocol | HTML/CSS Fallback |
+| Signal in UX Description | What It Implies | Rive Protocol | HTML/CSS Renderer |
 |--------------------------|----------------|---------------|-------------------|
 | "particles", "confetti", "sparkles", "burst", "emit" | Procedural element spawning | Node (`draw()`) | CSS `@keyframes` + JS spawning `<div>`s |
 | "chart", "graph", "bars from data", "plot", "visualize data" | Data-driven shape generation | Node (`draw()`) | SVG elements or `<canvas>` mapped from context |
@@ -273,20 +273,20 @@ When procedural patterns are detected, add to the recommendation:
 ```markdown
 ### Scripting Assessment
 
-| Visual Pattern | Rive Protocol | HTML/CSS Fallback | XState Impact |
+| Visual Pattern | Rive Protocol | HTML/CSS Renderer | XState Impact |
 |---------------|---------------|-------------------|---------------|
 | Confetti burst on completion | Node script | CSS particle animation | Add `celebrate` trigger event |
 | (other patterns...) | ... | ... | ... |
 
 **Logic boundary**: XState handles orchestration (when to celebrate).
-Rive script handles visuals (how particles behave). HTML/CSS fallback
+Rive script handles visuals (how particles behave). HTML/CSS renderer
 uses [specific approach] for the standalone version.
 ```
 
 ### Key Principle
 
 Scripting is a **Rive-internal concern**. It does not change the XState ↔ Rive contract. The assessment tells `/create-task`:
-1. What the HTML/CSS fallback needs to implement (procedural visuals in JS/CSS)
+1. What the HTML/CSS renderer needs to implement (procedural visuals in JS/CSS)
 2. What the Rive designer will need beyond standard Data Binding
 3. Whether XState needs additional context properties or events to support the effect
 
@@ -318,7 +318,7 @@ When the user is ready to implement, provide this format:
 ### Scripting Assessment
 [Only if procedural visual patterns detected — otherwise omit]
 
-| Visual Pattern | Rive Protocol | HTML/CSS Fallback | XState Impact |
+| Visual Pattern | Rive Protocol | HTML/CSS Renderer | XState Impact |
 |---------------|---------------|-------------------|---------------|
 | [pattern] | [protocol] | [fallback approach] | [context/event additions] |
 
