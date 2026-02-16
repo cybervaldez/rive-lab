@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const STORAGE_KEY = 'debug-panel-width'
 const MIN_WIDTH = 240
 const MAX_WIDTH_RATIO = 0.6
 
-function getInitialWidth(): number {
+function getInitialWidth(storageKey: string): number {
   if (typeof window === 'undefined') return 340
-  const stored = localStorage.getItem(STORAGE_KEY)
+  const stored = localStorage.getItem(storageKey)
   if (stored) {
     const n = parseInt(stored, 10)
     if (!isNaN(n) && n >= MIN_WIDTH) return n
@@ -14,8 +13,8 @@ function getInitialWidth(): number {
   return 340
 }
 
-export function useResizable() {
-  const [width, setWidth] = useState(getInitialWidth)
+export function useResizable(storageKey = 'debug-panel-width') {
+  const [width, setWidth] = useState(() => getInitialWidth(storageKey))
   const isResizing = useRef(false)
   const [resizing, setResizing] = useState(false)
 
@@ -25,7 +24,7 @@ export function useResizable() {
     setResizing(true)
 
     const startX = e.clientX
-    const startWidth = getInitialWidth()
+    const startWidth = getInitialWidth(storageKey)
 
     const currentWidth = { value: startWidth }
 
@@ -41,7 +40,7 @@ export function useResizable() {
     const onMouseUp = () => {
       isResizing.current = false
       setResizing(false)
-      localStorage.setItem(STORAGE_KEY, String(Math.round(currentWidth.value)))
+      localStorage.setItem(storageKey, String(Math.round(currentWidth.value)))
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
       document.body.style.cursor = ''
@@ -52,7 +51,7 @@ export function useResizable() {
     document.body.style.userSelect = 'none'
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
-  }, [])
+  }, [storageKey])
 
   // Clamp width if window resizes
   useEffect(() => {
