@@ -1,17 +1,17 @@
 import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useMachine } from '@xstate/react'
 import { getComponents, DEFAULT_RECIPE_KEY } from '../../lib/recipes'
 import { getMachine } from '../../machines'
 import { useXStateDebug } from '../../lib/useXStateDebug'
-import { useEventLog } from '../../lib/useEventLog'
-import { useResizable } from '../../lib/useResizable'
+import { useDebugInspector } from '../../lib/useDebugInspector'
 import { useTheme } from '../../lib/useTheme'
 import { useChecklist } from '../../lib/useChecklist'
 import { useTestWizard, readRiveUrl } from '../../lib/useTestWizard'
 import { extractMachineDoc } from '../../lib/extractMachineDoc'
 import { RecipePanel } from '../../components/RecipePanel'
-import { DebugPanel } from '../../components/DebugPanel'
+import { DebugFooter } from '../../components/DebugFooter'
+import { InstructOverlay } from '../../components/InstructOverlay'
 import { ProgressBarDemo } from '../../components/ProgressBarDemo'
 import { ToggleSwitchDemo } from '../../components/ToggleSwitchDemo'
 import { CounterDemo } from '../../components/CounterDemo'
@@ -31,30 +31,33 @@ export const Route = createFileRoute('/components/$recipeKey')({
 
 function RecipePage() {
   const { recipeKey } = Route.useParams()
+  // Key forces full remount when recipeKey changes — prevents XState machine
+  // mismatch errors (e.g. restoring 'idle' state into ToggleSwitchSM which has 'off')
+  return <RecipePageInner key={recipeKey} recipeKey={recipeKey} />
+}
+
+function RecipePageInner({ recipeKey }: { recipeKey: string }) {
   const navigate = useNavigate()
 
   const [theme, toggleTheme] = useTheme()
   const [checkedSteps, toggleStep] = useChecklist(recipeKey)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [openPanel, setOpenPanel] = useState<'debug' | 'instruct' | null>(null)
+  const inspector = useDebugInspector()
   const [renderer, setRenderer] = useState<'html' | 'rive'>('html')
-
-  const { width: panelWidth, handleMouseDown } = useResizable()
-  const eventLog = useEventLog()
 
   const recipe = components.find((r) => r.key === recipeKey)!
   const currentIndex = components.findIndex((r) => r.key === recipeKey)
 
   // XState machine
   const machine = getMachine(recipeKey)
-  const [snapshot, send, actorRef] = useMachine(machine, { inspect: eventLog.inspect })
+  const [snapshot, send, actorRef] = useMachine(machine, { inspect: inspector.eventLog.inspect })
 
   // Expose to window.__xstate__
   const machineId = machine.id
   useXStateDebug(machineId, actorRef)
 
   const stateValue = typeof snapshot.value === 'string' ? snapshot.value : JSON.stringify(snapshot.value)
-  const ctx = snapshot.context as Record<string, any>
+  const ctx = (snapshot.context ?? {}) as Record<string, any>
   const machineDocData = extractMachineDoc(machine)
 
   // Test wizard
@@ -66,24 +69,17 @@ function RecipePage() {
   const riveViewModel = (riveMeta?.riveViewModel as string) ?? ''
   const riveStateMachine = (riveMeta?.riveStateMachine as string) ?? ''
 
-  // Reset panels when recipeKey changes
-  useEffect(() => {
-    setOpenPanel(null)
-    setSidebarOpen(false)
-    setRenderer('html')
-  }, [recipeKey])
-
   // Close overlays on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setOpenPanel(null)
+        inspector.resetPanels()
         setSidebarOpen(false)
       }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [inspector.resetPanels])
 
   // Expose app state for pipeline testing (backward compat)
   useEffect(() => {
@@ -97,18 +93,6 @@ function RecipePage() {
     },
     [currentIndex, navigate],
   )
-
-  // Derive readout values from machine state
-  const getReadoutValue = (source: string): string => {
-    if (source === 'state') return stateValue
-    if (source === 'progress') {
-      if ('progress' in ctx) return String(ctx.progress)
-      if ('count' in ctx) return String(ctx.count)
-      throw new Error(`No progress/count in context for ${recipeKey}`)
-    }
-    if (source === 'active') return String(ctx.isActive)
-    throw new Error(`Unknown readout source: ${source}`)
-  }
 
   // Reset machine when switching renderers — Rive can't catch up to mid-flight state
   const switchRenderer = (next: 'html' | 'rive') => {
@@ -137,23 +121,16 @@ function RecipePage() {
         </button>
       </nav>
 
-      {/* Right-edge panel toggles */}
-      <nav className="top-right-nav" data-testid="right-nav">
+      {/* Floating toggle buttons */}
+      <div className="stream-float-btns">
         <button
-          className={`top-right-nav-link${openPanel === 'debug' ? ' active' : ''}`}
-          data-testid="tab-debug"
-          onClick={() => setOpenPanel((prev) => (prev === 'debug' ? null : 'debug'))}
-        >
-          debug
-        </button>
-        <button
-          className={`top-right-nav-link${openPanel === 'instruct' ? ' active' : ''}`}
-          data-testid="tab-panel"
-          onClick={() => setOpenPanel((prev) => (prev === 'instruct' ? null : 'instruct'))}
+          className={`stream-float-btn${inspector.instructMode !== 'closed' ? ' stream-float-btn--active' : ''}`}
+          data-testid="toggle-instruct"
+          onClick={inspector.toggleInstruct}
         >
           instructions
         </button>
-      </nav>
+      </div>
 
       {/* Topbar */}
       <header className="app-topbar" data-testid="app-topbar">
@@ -162,21 +139,28 @@ function RecipePage() {
         </Link>
         <span className="app-topbar-name" data-testid="topbar-name">
           {recipe.name}
-          <span className="app-topbar-readout" data-testid="state-readout">
-            {recipe.readout.map((item) => (
-              <span
-                key={item.source}
-                className="app-topbar-readout-item"
-                data-testid={`readout-item-${item.source}`}
-              >
-                {item.label}{' '}
-                <span className="app-topbar-readout-value" data-testid={`readout-${item.source}`}>
-                  {getReadoutValue(item.source)}
-                </span>
-              </span>
-            ))}
+          <span className="app-topbar-state" data-testid="app-state">
+            {stateValue}
           </span>
         </span>
+        <div className="renderer-toggle" data-testid="renderer-toggle">
+          <button
+            className={`renderer-toggle-btn${renderer === 'html' ? ' renderer-toggle-btn--active' : ''}`}
+            data-testid="renderer-html"
+            onClick={() => switchRenderer('html')}
+          >
+            html
+          </button>
+          <button
+            className={`renderer-toggle-btn${renderer === 'rive' ? ' renderer-toggle-btn--active' : ''}`}
+            data-testid="renderer-rive"
+            onClick={() => switchRenderer('rive')}
+            disabled={!riveUrl}
+            title={!riveUrl ? 'Add .riv URL via test wizard' : riveUrl}
+          >
+            rive{riveUrl ? ' \u2713' : ''}
+          </button>
+        </div>
         <button
           className="theme-toggle"
           data-testid="theme-toggle"
@@ -272,32 +256,9 @@ function RecipePage() {
         </aside>
 
         {/* Theater Area */}
-        <main
-          className={`theater-area${openPanel !== null ? ' theater-area--panel-open' : ''}`}
-          data-testid="theater-area"
-        >
+        <main className="theater-area" data-testid="theater-area">
           <div className="theater-content">
             <div className="stage" data-testid="stage">
-              <div className="stage-header" data-testid="stage-header">
-                <div className="renderer-toggle" data-testid="renderer-toggle">
-                  <button
-                    className={`renderer-toggle-btn${renderer === 'html' ? ' renderer-toggle-btn--active' : ''}`}
-                    data-testid="renderer-html"
-                    onClick={() => switchRenderer('html')}
-                  >
-                    html
-                  </button>
-                  <button
-                    className={`renderer-toggle-btn${renderer === 'rive' ? ' renderer-toggle-btn--active' : ''}`}
-                    data-testid="renderer-rive"
-                    onClick={() => switchRenderer('rive')}
-                    disabled={!riveUrl}
-                    title={!riveUrl ? 'Add .riv URL via test wizard' : riveUrl}
-                  >
-                    rive{riveUrl ? ' \u2713' : ''}
-                  </button>
-                </div>
-              </div>
               <div className="stage-body" data-testid="stage-body-demo">
                 <div className="stage-live" data-testid="stage-live">
                   {renderer === 'html' && (
@@ -320,54 +281,45 @@ function RecipePage() {
             </div>
           </div>
 
-          {/* Right Panel — inline flex child */}
-          {openPanel !== null && (
-            <>
-              <div
-                className="resize-handle"
-                data-testid="resize-handle"
-                onMouseDown={handleMouseDown}
-              />
-              <div
-                className="right-panel"
-                data-testid="right-panel"
-                style={{ width: panelWidth }}
-              >
-                <div className="right-panel-header">
-                  <button
-                    className="right-panel-close"
-                    data-testid="right-panel-close"
-                    onClick={() => setOpenPanel(null)}
-                  >
-                    &times;
-                  </button>
-                </div>
-                <div className="right-panel-body">
-                  {openPanel === 'debug' && (
-                    <DebugPanel
-                      machineDocData={machineDocData}
-                      stateValue={stateValue}
-                      context={ctx}
-                      eventLogEntries={eventLog.entries}
-                      onClearEventLog={eventLog.clear}
-                    />
-                  )}
-                  {openPanel === 'instruct' && (
-                    <RecipePanel
-                      recipe={recipe}
-                      machineDocData={machineDocData}
-                      stateValue={stateValue}
-                      checkedSteps={checkedSteps}
-                      toggleStep={toggleStep}
-                      onOpenWizard={wizard.openWizard}
-                    />
-                  )}
-                </div>
-              </div>
-            </>
-          )}
         </main>
+
+        {/* Instruct overlay — single instance handles overlay/pinned/closed */}
+        <InstructOverlay
+          mode={inspector.instructMode}
+          onClose={inspector.toggleInstruct}
+          onPin={inspector.togglePin}
+          width={inspector.instructWidth}
+          onResizeStart={inspector.instructResizeStart}
+          zIndex={inspector.instructZIndex}
+          onFocus={inspector.focusInstruct}
+        >
+          <RecipePanel
+            recipe={recipe}
+            machineDocData={machineDocData}
+            stateValue={stateValue}
+            checkedSteps={checkedSteps}
+            toggleStep={toggleStep}
+            onOpenWizard={wizard.openWizard}
+          />
+        </InstructOverlay>
       </div>
+
+      {/* Debug footer */}
+      <DebugFooter
+        stateValue={stateValue}
+        context={ctx}
+        machineDocData={machineDocData}
+        eventLogEntries={inspector.eventLog.entries}
+        onClearEventLog={inspector.eventLog.clear}
+        mode={inspector.debugMode}
+        onToggle={inspector.toggleDebug}
+        onPin={inspector.toggleDebugPin}
+        zIndex={inspector.debugZIndex}
+        onFocus={inspector.focusDebug}
+        height={inspector.debugHeight}
+        onResizeStart={inspector.debugResizeStart}
+        isResizing={inspector.debugResizing}
+      />
 
       {/* Test Wizard Modal */}
       {wizard.open && (

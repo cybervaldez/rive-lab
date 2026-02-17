@@ -185,28 +185,36 @@ sleep 0.3
 echo ""
 echo "--- PHASE 4: Debug panel ---"
 
-# 20. Debug panel opens
-browser_eval "document.querySelector('[data-testid=\"tab-debug\"]')?.click()" > /dev/null
+# 20. Debug panel opens via footer bar
+browser_eval "document.querySelector('[data-testid=\"debug-footer-bar\"]')?.click()" > /dev/null
 sleep 0.5
 
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-panel\"]') !== null")
 [ "$VALUE" = "true" ] && pass "Debug panel opens" || fail "Debug panel missing"
 
-# 21. StateGraph renders
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"state-graph\"]') !== null")
-[ "$VALUE" = "true" ] && pass "StateGraph renders in debug panel" || fail "StateGraph missing"
-
-# 22. Context inspector renders
+# 21. Context inspector renders (default tab)
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"context-inspector\"]') !== null")
-[ "$VALUE" = "true" ] && pass "Context inspector renders" || fail "Context inspector missing"
+[ "$VALUE" = "true" ] && pass "Context inspector renders (default tab)" || fail "Context inspector missing"
 
-# 23. Event log renders
+# 22. StateGraph renders on State tab
+browser_eval "document.querySelector('[data-testid=\"debug-tab-state\"]')?.click()" > /dev/null
+sleep 0.3
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"state-graph\"]') !== null")
+[ "$VALUE" = "true" ] && pass "StateGraph renders on State tab" || fail "StateGraph missing"
+
+# 23. Event log renders on Events tab
+browser_eval "document.querySelector('[data-testid=\"debug-tab-events\"]')?.click()" > /dev/null
+sleep 0.3
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"event-log\"]') !== null")
-[ "$VALUE" = "true" ] && pass "Event log renders" || fail "Event log missing"
+[ "$VALUE" = "true" ] && pass "Event log renders on Events tab" || fail "Event log missing"
 
 # 24. window.__xstate__ exposed
 VALUE=$(browser_eval "typeof window.__xstate__?.TestBenchSM")
 [ "$VALUE" = "object" ] && pass "window.__xstate__.TestBenchSM exposed" || fail "XState debug missing: $VALUE"
+
+# Close debug panel before Phase 5
+browser_eval "document.querySelector('[data-testid=\"debug-footer-bar\"]')?.click()" > /dev/null
+sleep 0.3
 
 # ============================================================================
 # PHASE 5: Instructions panel + test wizard
@@ -215,7 +223,7 @@ echo ""
 echo "--- PHASE 5: Instructions + Test wizard ---"
 
 # 25. Switch to instructions
-browser_eval "document.querySelector('[data-testid=\"tab-panel\"]')?.click()" > /dev/null
+browser_eval "document.querySelector('[data-testid=\"toggle-instruct\"]')?.click()" > /dev/null
 sleep 0.5
 
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"recipe-panel\"]') !== null")
@@ -261,35 +269,41 @@ sleep 1
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"test-wizard-summary\"]')?.textContent")
 echo "$VALUE" | grep -qE "[0-9]+/[0-9]+ passed" && pass "Event tests ran: $VALUE" || fail "Event tests: $VALUE"
 
-# Close wizard
+# Close wizard and instruct overlay
 browser_eval "document.querySelector('[data-testid=\"test-wizard-close\"]')?.click()" > /dev/null
+sleep 0.3
+browser_eval "document.querySelector('[data-testid=\"instruct-close\"]')?.click()" > /dev/null
 sleep 0.3
 
 # ============================================================================
-# PHASE 6: Mutual exclusivity of panels
+# PHASE 6: Debug + Instruct independence
 # ============================================================================
 echo ""
-echo "--- PHASE 6: Panel mutual exclusivity ---"
+echo "--- PHASE 6: Debug + Instruct independence ---"
 
-# 32. Open debug, then instruct — debug should close
-browser_eval "document.querySelector('[data-testid=\"tab-debug\"]')?.click()" > /dev/null
+# 32. Open debug footer
+browser_eval "document.querySelector('[data-testid=\"debug-footer-bar\"]')?.click()" > /dev/null
 sleep 0.3
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-panel\"]') !== null")
 [ "$VALUE" = "true" ] && pass "Debug panel opened" || fail "Debug panel missing"
 
-browser_eval "document.querySelector('[data-testid=\"tab-panel\"]')?.click()" > /dev/null
+# 33. Open instruct — debug stays open (independent)
+browser_eval "document.querySelector('[data-testid=\"toggle-instruct\"]')?.click()" > /dev/null
 sleep 0.3
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-panel\"]')")
-[ "$VALUE" = "null" ] && pass "Debug panel closed when instruct opened" || fail "Debug panel still open"
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-panel\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Debug stays open when instruct opened" || fail "Debug closed unexpectedly"
 
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"recipe-panel\"]') !== null")
-[ "$VALUE" = "true" ] && pass "Instructions panel now showing" || fail "Instructions panel missing"
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"instruct-overlay\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Instruct overlay opened" || fail "Instruct overlay missing"
 
-# 33. Close panel
-browser_eval "document.querySelector('[data-testid=\"right-panel-close\"]')?.click()" > /dev/null
+# 34. Close instruct — debug still open
+browser_eval "document.querySelector('[data-testid=\"instruct-close\"]')?.click()" > /dev/null
 sleep 0.3
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"right-panel\"]')")
-[ "$VALUE" = "null" ] && pass "Panel closed via close button" || fail "Panel still open"
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"instruct-overlay\"]')")
+[ "$VALUE" = "null" ] && pass "Instruct closed via close button" || fail "Instruct still open"
+
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-panel\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Debug still open after instruct closed" || fail "Debug panel not found"
 
 agent-browser close 2>/dev/null || true
 print_summary

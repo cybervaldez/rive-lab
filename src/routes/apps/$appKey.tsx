@@ -5,14 +5,14 @@ import { setup } from 'xstate'
 import { getApps } from '../../lib/recipes'
 import { getMachine } from '../../machines'
 import { useXStateDebug } from '../../lib/useXStateDebug'
-import { useEventLog } from '../../lib/useEventLog'
-import { useResizable } from '../../lib/useResizable'
+import { useDebugInspector } from '../../lib/useDebugInspector'
 import { useTheme } from '../../lib/useTheme'
 import { useChecklist } from '../../lib/useChecklist'
 import { useTestWizard, readRiveUrl } from '../../lib/useTestWizard'
 import { extractMachineDoc } from '../../lib/extractMachineDoc'
 import { RecipePanel } from '../../components/RecipePanel'
-import { DebugPanel } from '../../components/DebugPanel'
+import { DebugFooter } from '../../components/DebugFooter'
+import { InstructOverlay } from '../../components/InstructOverlay'
 import { InputDemo } from '../../components/InputDemo'
 import { RiveRenderer } from '../../components/RiveRenderer'
 import type { DemoProps } from '../../components/types'
@@ -53,18 +53,15 @@ function AppDetailPage() {
   const { appKey } = Route.useParams()
   const [theme, toggleTheme] = useTheme()
   const [checkedSteps, toggleStep] = useChecklist(appKey)
-  const [openPanel, setOpenPanel] = useState<'debug' | 'instruct' | null>(null)
+  const inspector = useDebugInspector()
   const [renderer, setRenderer] = useState<'html' | 'rive'>('html')
-
-  const { width: panelWidth, handleMouseDown } = useResizable()
-  const eventLog = useEventLog()
 
   const app = apps.find((r) => r.key === appKey)!
 
   // XState machine
   const machine = getAppMachine(appKey)
   const isRealMachine = machine !== nullMachine
-  const [snapshot, send, actorRef] = useMachine(machine, { inspect: eventLog.inspect })
+  const [snapshot, send, actorRef] = useMachine(machine, { inspect: inspector.eventLog.inspect })
 
   // Expose to window.__xstate__ when a real machine exists
   const machineId = machine.id
@@ -87,14 +84,16 @@ function AppDetailPage() {
   const riveViewModel = (riveMeta?.riveViewModel as string) ?? ''
   const riveStateMachine = (riveMeta?.riveStateMachine as string) ?? ''
 
-  // Close panel on Escape (only when mapper is not open)
+  // Close overlays on Escape (only when mapper is not open)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !ctx.mapperOpen) setOpenPanel(null)
+      if (e.key === 'Escape' && !ctx.mapperOpen) {
+        inspector.resetPanels()
+      }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [ctx.mapperOpen])
+  }, [ctx.mapperOpen, inspector.resetPanels])
 
   // Reset machine when switching renderers — Rive can't catch up to mid-flight state
   const switchRenderer = (next: 'html' | 'rive') => {
@@ -110,27 +109,55 @@ function AppDetailPage() {
     send,
   }
 
+  const instructContent = machineDocData ? (
+    <RecipePanel
+      recipe={app}
+      machineDocData={machineDocData}
+      stateValue={stateValue}
+      checkedSteps={checkedSteps}
+      toggleStep={toggleStep}
+      onOpenWizard={wizard.openWizard}
+    />
+  ) : (
+    <div className="instruct-panel" data-testid="instruct-panel">
+      <ol className="instruct-list" data-testid="instruct-list">
+        {app.instruct.map((item, i) => (
+          <li
+            key={i}
+            className={`instruct-step${checkedSteps.has(i) ? ' instruct-step--checked' : ''}`}
+            data-testid={`instruct-step-${i}`}
+            onClick={() => toggleStep(i)}
+          >
+            <span className="instruct-step-title">{item.step}</span>
+            <span className="instruct-step-detail">{item.detail}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="instruct-hint" data-testid="instruct-hint">
+        Click on an item to mark it as complete
+      </p>
+      <button
+        className="instruct-test-btn"
+        data-testid="instruct-test-btn"
+        onClick={wizard.openWizard}
+      >
+        test
+      </button>
+    </div>
+  )
+
   return (
     <div className="app-theater" data-testid="app-theater">
-      {/* Floating right-edge panel toggles */}
-      <nav className="top-right-nav" data-testid="right-nav">
-        {isRealMachine && machineDocData && (
-          <button
-            className={`top-right-nav-link${openPanel === 'debug' ? ' active' : ''}`}
-            data-testid="tab-debug"
-            onClick={() => setOpenPanel((prev) => (prev === 'debug' ? null : 'debug'))}
-          >
-            debug
-          </button>
-        )}
+      {/* Floating toggle buttons */}
+      <div className="stream-float-btns">
         <button
-          className={`top-right-nav-link${openPanel === 'instruct' ? ' active' : ''}`}
-          data-testid="tab-panel"
-          onClick={() => setOpenPanel((prev) => (prev === 'instruct' ? null : 'instruct'))}
+          className={`stream-float-btn${inspector.instructMode !== 'closed' ? ' stream-float-btn--active' : ''}`}
+          data-testid="toggle-instruct"
+          onClick={inspector.toggleInstruct}
         >
           instructions
         </button>
-      </nav>
+      </div>
 
       {/* Top bar */}
       <header className="app-topbar" data-testid="app-topbar">
@@ -143,6 +170,24 @@ function AppDetailPage() {
             {isRealMachine ? stateValue : app.state}
           </span>
         </span>
+        <div className="renderer-toggle" data-testid="renderer-toggle">
+          <button
+            className={`renderer-toggle-btn${renderer === 'html' ? ' renderer-toggle-btn--active' : ''}`}
+            data-testid="renderer-html"
+            onClick={() => switchRenderer('html')}
+          >
+            html
+          </button>
+          <button
+            className={`renderer-toggle-btn${renderer === 'rive' ? ' renderer-toggle-btn--active' : ''}`}
+            data-testid="renderer-rive"
+            onClick={() => switchRenderer('rive')}
+            disabled={!riveUrl}
+            title={!riveUrl ? 'Add .riv URL via test wizard' : riveUrl}
+          >
+            rive{riveUrl ? ' \u2713' : ''}
+          </button>
+        </div>
         <button
           className="theme-toggle"
           data-testid="theme-toggle"
@@ -158,29 +203,9 @@ function AppDetailPage() {
         </button>
       </header>
 
-      {/* Stage + panel row */}
+      {/* Stage + instruct row */}
       <div className="app-body">
         <main className="app-stage" data-testid="app-stage">
-          <div className="stage-header" data-testid="stage-header">
-            <div className="renderer-toggle" data-testid="renderer-toggle">
-              <button
-                className={`renderer-toggle-btn${renderer === 'html' ? ' renderer-toggle-btn--active' : ''}`}
-                data-testid="renderer-html"
-                onClick={() => switchRenderer('html')}
-              >
-                html
-              </button>
-              <button
-                className={`renderer-toggle-btn${renderer === 'rive' ? ' renderer-toggle-btn--active' : ''}`}
-                data-testid="renderer-rive"
-                onClick={() => switchRenderer('rive')}
-                disabled={!riveUrl}
-                title={!riveUrl ? 'Add .riv URL via test wizard' : riveUrl}
-              >
-                rive{riveUrl ? ' \u2713' : ''}
-              </button>
-            </div>
-          </div>
           {renderer === 'html' && (
             <>
               {isRealMachine && appKey === 'input-demo' ? (
@@ -204,83 +229,38 @@ function AppDetailPage() {
           )}
         </main>
 
-        {/* Right Panel — inline flex child */}
-        {openPanel !== null && (
-          <>
-            <div
-              className="resize-handle"
-              data-testid="resize-handle"
-              onMouseDown={handleMouseDown}
-            />
-            <div
-              className="right-panel"
-              data-testid="right-panel"
-              style={{ width: panelWidth }}
-            >
-              <div className="right-panel-header">
-                <button
-                  className="right-panel-close"
-                  data-testid="right-panel-close"
-                  onClick={() => setOpenPanel(null)}
-                >
-                  &times;
-                </button>
-              </div>
-              <div className="right-panel-body">
-                {openPanel === 'debug' && machineDocData && (
-                  <DebugPanel
-                    machineDocData={machineDocData}
-                    stateValue={stateValue}
-                    context={ctx}
-                    eventLogEntries={eventLog.entries}
-                    onClearEventLog={eventLog.clear}
-                  />
-                )}
-                {openPanel === 'instruct' && (
-                  <>
-                    {machineDocData ? (
-                      <RecipePanel
-                        recipe={app}
-                        machineDocData={machineDocData}
-                        stateValue={stateValue}
-                        checkedSteps={checkedSteps}
-                        toggleStep={toggleStep}
-                        onOpenWizard={wizard.openWizard}
-                      />
-                    ) : (
-                      <div className="instruct-panel" data-testid="instruct-panel">
-                        <ol className="instruct-list" data-testid="instruct-list">
-                          {app.instruct.map((item, i) => (
-                            <li
-                              key={i}
-                              className={`instruct-step${checkedSteps.has(i) ? ' instruct-step--checked' : ''}`}
-                              data-testid={`instruct-step-${i}`}
-                              onClick={() => toggleStep(i)}
-                            >
-                              <span className="instruct-step-title">{item.step}</span>
-                              <span className="instruct-step-detail">{item.detail}</span>
-                            </li>
-                          ))}
-                        </ol>
-                        <p className="instruct-hint" data-testid="instruct-hint">
-                          Click on an item to mark it as complete
-                        </p>
-                        <button
-                          className="instruct-test-btn"
-                          data-testid="instruct-test-btn"
-                          onClick={wizard.openWizard}
-                        >
-                          test
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          </>
-        )}
+        {/* Instruct overlay — single instance handles overlay/pinned/closed */}
+        <InstructOverlay
+          mode={inspector.instructMode}
+          onClose={inspector.toggleInstruct}
+          onPin={inspector.togglePin}
+          width={inspector.instructWidth}
+          onResizeStart={inspector.instructResizeStart}
+          zIndex={inspector.instructZIndex}
+          onFocus={inspector.focusInstruct}
+        >
+          {instructContent}
+        </InstructOverlay>
       </div>
+
+      {/* Debug footer */}
+      {isRealMachine && machineDocData && (
+        <DebugFooter
+          stateValue={stateValue}
+          context={ctx}
+          machineDocData={machineDocData}
+          eventLogEntries={inspector.eventLog.entries}
+          onClearEventLog={inspector.eventLog.clear}
+          mode={inspector.debugMode}
+          onToggle={inspector.toggleDebug}
+          onPin={inspector.toggleDebugPin}
+          zIndex={inspector.debugZIndex}
+          onFocus={inspector.focusDebug}
+          height={inspector.debugHeight}
+          onResizeStart={inspector.debugResizeStart}
+          isResizing={inspector.debugResizing}
+        />
+      )}
 
       {/* Test Wizard Modal */}
       {wizard.open && (

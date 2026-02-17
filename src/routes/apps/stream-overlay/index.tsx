@@ -8,8 +8,7 @@ import type { StreamTab } from '../../../machines/streamOverlay'
 import { useWebSocket } from '../../../lib/useWebSocket'
 import type { ApiEvent } from '../../../components/StreamApiTab'
 import { useXStateDebug } from '../../../lib/useXStateDebug'
-import { useEventLog } from '../../../lib/useEventLog'
-import { useResizable } from '../../../lib/useResizable'
+import { useDebugInspector } from '../../../lib/useDebugInspector'
 import { useTheme } from '../../../lib/useTheme'
 import { useChecklist } from '../../../lib/useChecklist'
 import { useTestWizard, readRiveUrl } from '../../../lib/useTestWizard'
@@ -44,17 +43,13 @@ const TABS: { key: StreamTab; label: string }[] = [
 function StreamOverlayPage() {
   const [theme, toggleTheme] = useTheme()
   const [checkedSteps, toggleStep] = useChecklist(APP_KEY)
-  const [instructMode, setInstructMode] = useState<'closed' | 'overlay' | 'pinned'>('closed')
-  const [debugMode, setDebugMode] = useState<'collapsed' | 'expanded' | 'pinned'>('collapsed')
+  const inspector = useDebugInspector()
   const [renderer, setRenderer] = useState<'html' | 'rive'>('html')
-
-  const { width: instructWidth, handleMouseDown: instructResizeStart } = useResizable('instruct-panel-width')
-  const eventLog = useEventLog()
 
   const app = apps.find((r) => r.key === APP_KEY)!
 
   // XState machine
-  const [snapshot, send, actorRef] = useMachine(streamOverlayMachine, { inspect: eventLog.inspect })
+  const [snapshot, send, actorRef] = useMachine(streamOverlayMachine, { inspect: inspector.eventLog.inspect })
 
   const machineId = streamOverlayMachine.id
   useXStateDebug(machineId, actorRef)
@@ -141,21 +136,12 @@ function StreamOverlayPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !ctx.mapperOpen) {
-        setInstructMode('closed')
-        setDebugMode('collapsed')
+        inspector.resetPanels()
       }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [ctx.mapperOpen])
-
-  const toggleInstruct = () => {
-    setInstructMode((prev) => (prev === 'closed' ? 'overlay' : 'closed'))
-  }
-
-  const toggleDebug = () => {
-    setDebugMode((prev) => (prev === 'collapsed' ? 'expanded' : 'collapsed'))
-  }
+  }, [ctx.mapperOpen, inspector.resetPanels])
 
   // Reset machine when switching renderers
   const switchRenderer = (next: 'html' | 'rive') => {
@@ -214,21 +200,14 @@ function StreamOverlayPage() {
 
   return (
     <div className="app-theater" data-testid="app-theater">
-      {/* Floating toggle buttons */}
+      {/* Floating toggle button */}
       <div className="stream-float-btns">
         <button
-          className={`stream-float-btn${instructMode !== 'closed' ? ' stream-float-btn--active' : ''}`}
+          className={`stream-float-btn${inspector.instructMode !== 'closed' ? ' stream-float-btn--active' : ''}`}
           data-testid="toggle-instruct"
-          onClick={toggleInstruct}
+          onClick={inspector.toggleInstruct}
         >
           instructions
-        </button>
-        <button
-          className={`stream-float-btn${debugMode !== 'collapsed' ? ' stream-float-btn--active' : ''}`}
-          data-testid="toggle-debug"
-          onClick={toggleDebug}
-        >
-          debug
         </button>
       </div>
 
@@ -243,6 +222,24 @@ function StreamOverlayPage() {
             {stateValue}
           </span>
         </span>
+        <div className="renderer-toggle" data-testid="renderer-toggle">
+          <button
+            className={`renderer-toggle-btn${renderer === 'html' ? ' renderer-toggle-btn--active' : ''}`}
+            data-testid="renderer-html"
+            onClick={() => switchRenderer('html')}
+          >
+            html
+          </button>
+          <button
+            className={`renderer-toggle-btn${renderer === 'rive' ? ' renderer-toggle-btn--active' : ''}`}
+            data-testid="renderer-rive"
+            onClick={() => switchRenderer('rive')}
+            disabled={!riveUrl}
+            title={!riveUrl ? 'Add .riv URL via test wizard' : riveUrl}
+          >
+            rive{riveUrl ? ' \u2713' : ''}
+          </button>
+        </div>
         <button
           className="theme-toggle"
           data-testid="theme-toggle"
@@ -260,41 +257,8 @@ function StreamOverlayPage() {
 
       {/* Stage + panel row */}
       <div className="app-body">
-        {/* Instruct panel (pinned mode: inline flex child) */}
-        {instructMode === 'pinned' && (
-          <InstructOverlay
-            mode="pinned"
-            onClose={() => setInstructMode('closed')}
-            onPin={() => setInstructMode('overlay')}
-            width={instructWidth}
-            onResizeStart={instructResizeStart}
-          >
-            {instructContent}
-          </InstructOverlay>
-        )}
-
         <main className="app-stage app-stage--stream" data-testid="app-stage">
           <div className="stage-header" data-testid="stage-header">
-            {/* Renderer toggle */}
-            <div className="renderer-toggle" data-testid="renderer-toggle">
-              <button
-                className={`renderer-toggle-btn${renderer === 'html' ? ' renderer-toggle-btn--active' : ''}`}
-                data-testid="renderer-html"
-                onClick={() => switchRenderer('html')}
-              >
-                html
-              </button>
-              <button
-                className={`renderer-toggle-btn${renderer === 'rive' ? ' renderer-toggle-btn--active' : ''}`}
-                data-testid="renderer-rive"
-                onClick={() => switchRenderer('rive')}
-                disabled={!riveUrl}
-                title={!riveUrl ? 'Add .riv URL via test wizard' : riveUrl}
-              >
-                rive{riveUrl ? ' \u2713' : ''}
-              </button>
-            </div>
-
             {/* Tab bar */}
             <div className="stream-tabs" data-testid="stream-tabs">
               {TABS.map((tab) => (
@@ -375,33 +339,36 @@ function StreamOverlayPage() {
           )}
         </main>
 
-        {/* Instruct overlay (overlay mode: absolute positioned) */}
-        <AnimatePresence>
-          {instructMode === 'overlay' && (
-            <InstructOverlay
-              mode="overlay"
-              onClose={() => setInstructMode('closed')}
-              onPin={() => setInstructMode('pinned')}
-              width={instructWidth}
-              onResizeStart={instructResizeStart}
-            >
-              {instructContent}
-            </InstructOverlay>
-          )}
-        </AnimatePresence>
+        {/* Instruct overlay — single instance handles overlay/pinned/closed */}
+        <InstructOverlay
+          mode={inspector.instructMode}
+          onClose={inspector.toggleInstruct}
+          onPin={inspector.togglePin}
+          width={inspector.instructWidth}
+          onResizeStart={inspector.instructResizeStart}
+          zIndex={inspector.instructZIndex}
+          onFocus={inspector.focusInstruct}
+        >
+          {instructContent}
+        </InstructOverlay>
       </div>
 
       {/* Debug footer — always rendered at bottom */}
       {machineDocData && (
         <DebugFooter
-          mode={debugMode}
+          mode={inspector.debugMode}
           stateValue={stateValue}
           context={ctx as Record<string, any>}
           machineDocData={machineDocData}
-          eventLogEntries={eventLog.entries}
-          onClearEventLog={eventLog.clear}
-          onToggle={toggleDebug}
-          onPin={() => setDebugMode((prev) => (prev === 'pinned' ? 'expanded' : 'pinned'))}
+          eventLogEntries={inspector.eventLog.entries}
+          onClearEventLog={inspector.eventLog.clear}
+          onToggle={inspector.toggleDebug}
+          onPin={inspector.toggleDebugPin}
+          zIndex={inspector.debugZIndex}
+          onFocus={inspector.focusDebug}
+          height={inspector.debugHeight}
+          onResizeStart={inspector.debugResizeStart}
+          isResizing={inspector.debugResizing}
         />
       )}
 

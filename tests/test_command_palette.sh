@@ -1,5 +1,5 @@
 #!/bin/bash
-# tests/test_command_palette.sh — Verify recipe selection updates readout and state
+# tests/test_command_palette.sh — Verify recipe selection updates state
 set +e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/test_utils.sh"
@@ -21,33 +21,33 @@ sleep 2
 VALUE=$(browser_eval "window.location.pathname")
 echo "$VALUE" | grep -q "progress-bar" && pass "Initial recipe: progress-bar" || fail "Initial recipe: got '$VALUE'"
 
-# 2. Navigate to toggle-switch — readout updates
+# 2. Navigate to toggle-switch — state updates
 agent-browser open "$BASE_URL/components/toggle-switch" 2>/dev/null
 sleep 2
 
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-state\"]')?.textContent")
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"app-state\"]')?.textContent")
 [ "$VALUE" = "off" ] && pass "Toggle-switch state: off" || fail "Toggle-switch state: got '$VALUE' (expected: off)"
 
-# 3. Toggle-switch readout shows isOn=false
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-active\"]')?.textContent")
-[ "$VALUE" = "false" ] && pass "Toggle-switch isOn: false" || fail "Toggle-switch isOn: got '$VALUE' (expected: false)"
+# 3. Toggle-switch context shows isActive=false
+VALUE=$(browser_eval "window.__xstate__?.ToggleSwitchSM?.context()?.isActive")
+[ "$VALUE" = "false" ] && pass "Toggle-switch isActive: false" || fail "Toggle-switch isActive: got '$VALUE' (expected: false)"
 
-# 4. Navigate to counter — readout updates
+# 4. Navigate to counter — state updates
 agent-browser open "$BASE_URL/components/counter" 2>/dev/null
 sleep 2
 
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-state\"]')?.textContent")
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"app-state\"]')?.textContent")
 [ "$VALUE" = "idle" ] && pass "Counter state: idle" || fail "Counter state: got '$VALUE' (expected: idle)"
 
-# 5. Counter readout shows count=0
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-progress\"]')?.textContent")
+# 5. Counter context shows count=0
+VALUE=$(browser_eval "window.__xstate__?.CounterSM?.context()?.count")
 [ "$VALUE" = "0" ] && pass "Counter count: 0" || fail "Counter count: got '$VALUE' (expected: 0)"
 
-# 6. Navigate back to progress-bar — readout resets
+# 6. Navigate back to progress-bar — state resets
 agent-browser open "$BASE_URL/components/progress-bar" 2>/dev/null
 sleep 2
 
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-state\"]')?.textContent")
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"app-state\"]')?.textContent")
 [ "$VALUE" = "idle" ] && pass "Back to progress-bar state: idle" || fail "Back to progress-bar state: got '$VALUE' (expected: idle)"
 
 # 7. Demo view visible (not docs)

@@ -20,35 +20,34 @@ sleep 2
 VALUE=$(browser_eval "window.location.pathname")
 echo "$VALUE" | grep -q "progress-bar" && pass "URL lands on progress-bar" || fail "URL: got '$VALUE' (expected: /components/progress-bar)"
 
-# 2. Machine state shows 'idle' (initial state)
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-state\"]')?.textContent")
+# 2. Machine state shows 'idle' in topbar
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"app-state\"]')?.textContent")
 [ "$VALUE" = "idle" ] && pass "Machine state: idle" || fail "Machine state: got '$VALUE' (expected: idle)"
 
-# 3. Readout progress is 0 (initial context)
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-progress\"]')?.textContent")
-[ "$VALUE" = "0" ] && pass "Readout progress: 0" || fail "Readout progress: got '$VALUE' (expected: 0)"
+# 3. Machine context via __xstate__ (progress=0, isActive=false)
+PROGRESS=$(browser_eval "window.__xstate__?.ProgressBarSM?.context()?.progress")
+[ "$PROGRESS" = "0" ] && pass "Initial progress: 0" || fail "Initial progress: got '$PROGRESS' (expected: 0)"
 
-# 4. Readout isActive is false (initial context)
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"readout-active\"]')?.textContent")
-[ "$VALUE" = "false" ] && pass "Readout isActive: false" || fail "Readout isActive: got '$VALUE' (expected: false)"
+ACTIVE=$(browser_eval "window.__xstate__?.ProgressBarSM?.context()?.isActive")
+[ "$ACTIVE" = "false" ] && pass "Initial isActive: false" || fail "Initial isActive: got '$ACTIVE' (expected: false)"
 
-# 5. Docs pill exists and is not active
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"topbar-docs\"]')?.classList.contains('active')")
-[ "$VALUE" = "false" ] && pass "Docs pill not active on load" || fail "Docs pill active on load: got '$VALUE'"
+# 4. Debug footer bar visible on load
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-footer-bar\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Debug footer bar visible on load" || fail "Debug footer bar missing on load"
 
-# 6. Stage-live visible (demo showing, not docs)
+# 5. Stage-live visible (demo showing, not docs)
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"stage-live\"]') !== null")
 [ "$VALUE" = "true" ] && pass "Stage-live visible on load" || fail "Stage-live missing on load"
 
-# 7. Instructions button exists
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"tab-panel\"]') !== null")
+# 6. Instructions button exists
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"toggle-instruct\"]') !== null")
 [ "$VALUE" = "true" ] && pass "Instructions button present" || fail "Instructions button missing"
 
-# 8. XState window object exposed
-VALUE=$(browser_eval "window.__xstate__?.state")
+# 7. XState window object exposed
+VALUE=$(browser_eval "window.__xstate__?.ProgressBarSM?.state()")
 [ -n "$VALUE" ] && pass "XState exposed on window (state=$VALUE)" || fail "XState not exposed on window"
 
-# 9. No JS errors on page load
+# 8. No JS errors on page load
 JS_ERRORS=$(agent-browser errors 2>/dev/null || echo "")
 if [ -z "$JS_ERRORS" ] || echo "$JS_ERRORS" | grep -q "^\[\]$"; then
     pass "No JS errors detected"

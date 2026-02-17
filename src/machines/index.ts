@@ -3,6 +3,7 @@ import { toggleSwitchMachine } from './toggleSwitch'
 import { counterMachine } from './counter'
 import { inputDemoMachine } from './inputDemo'
 import { testBenchMachine } from './testBench'
+import { streamOverlayMachine } from './streamOverlay'
 
 const machineMap: Record<string, any> = {
   'progress-bar': progressBarMachine,
@@ -10,6 +11,7 @@ const machineMap: Record<string, any> = {
   counter: counterMachine,
   'input-demo': inputDemoMachine,
   'test-bench': testBenchMachine,
+  'stream-overlay': streamOverlayMachine,
 }
 
 export function getMachine(key: string) {
@@ -18,4 +20,4 @@ export function getMachine(key: string) {
   return machine
 }
 
-export { progressBarMachine, toggleSwitchMachine, counterMachine, inputDemoMachine, testBenchMachine }
+export { progressBarMachine, toggleSwitchMachine, counterMachine, inputDemoMachine, testBenchMachine, streamOverlayMachine }

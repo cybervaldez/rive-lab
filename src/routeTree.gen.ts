@@ -14,9 +14,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestIndexRouteImport } from './routes/test/index'
 import { Route as ComponentsIndexRouteImport } from './routes/components/index'
 import { Route as AppsIndexRouteImport } from './routes/apps/index'
+import { Route as ViewRoomIdRouteImport } from './routes/view/$roomId'
 import { Route as TestTestKeyRouteImport } from './routes/test/$testKey'
 import { Route as ComponentsRecipeKeyRouteImport } from './routes/components/$recipeKey'
+import { Route as AppsStreamOverlayRouteImport } from './routes/apps/stream-overlay'
 import { Route as AppsAppKeyRouteImport } from './routes/apps/$appKey'
+import { Route as AppsStreamOverlayIndexRouteImport } from './routes/apps/stream-overlay/index'
+import { Route as AppsStreamOverlayLiveRouteImport } from './routes/apps/stream-overlay/live'
 
 const RecipeKeyRoute = RecipeKeyRouteImport.update({
   id: '/$recipeKey',
@@ -43,6 +47,11 @@ const AppsIndexRoute = AppsIndexRouteImport.update({
   path: '/apps/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ViewRoomIdRoute = ViewRoomIdRouteImport.update({
+  id: '/view/$roomId',
+  path: '/view/$roomId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TestTestKeyRoute = TestTestKeyRouteImport.update({
   id: '/test/$testKey',
   path: '/test/$testKey',
@@ -53,21 +62,40 @@ const ComponentsRecipeKeyRoute = ComponentsRecipeKeyRouteImport.update({
   path: '/components/$recipeKey',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppsStreamOverlayRoute = AppsStreamOverlayRouteImport.update({
+  id: '/apps/stream-overlay',
+  path: '/apps/stream-overlay',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppsAppKeyRoute = AppsAppKeyRouteImport.update({
   id: '/apps/$appKey',
   path: '/apps/$appKey',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppsStreamOverlayIndexRoute = AppsStreamOverlayIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppsStreamOverlayRoute,
+} as any)
+const AppsStreamOverlayLiveRoute = AppsStreamOverlayLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => AppsStreamOverlayRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$recipeKey': typeof RecipeKeyRoute
   '/apps/$appKey': typeof AppsAppKeyRoute
+  '/apps/stream-overlay': typeof AppsStreamOverlayRouteWithChildren
   '/components/$recipeKey': typeof ComponentsRecipeKeyRoute
   '/test/$testKey': typeof TestTestKeyRoute
+  '/view/$roomId': typeof ViewRoomIdRoute
   '/apps/': typeof AppsIndexRoute
   '/components/': typeof ComponentsIndexRoute
   '/test/': typeof TestIndexRoute
+  '/apps/stream-overlay/live': typeof AppsStreamOverlayLiveRoute
+  '/apps/stream-overlay/': typeof AppsStreamOverlayIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,20 +103,27 @@ export interface FileRoutesByTo {
   '/apps/$appKey': typeof AppsAppKeyRoute
   '/components/$recipeKey': typeof ComponentsRecipeKeyRoute
   '/test/$testKey': typeof TestTestKeyRoute
+  '/view/$roomId': typeof ViewRoomIdRoute
   '/apps': typeof AppsIndexRoute
   '/components': typeof ComponentsIndexRoute
   '/test': typeof TestIndexRoute
+  '/apps/stream-overlay/live': typeof AppsStreamOverlayLiveRoute
+  '/apps/stream-overlay': typeof AppsStreamOverlayIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$recipeKey': typeof RecipeKeyRoute
   '/apps/$appKey': typeof AppsAppKeyRoute
+  '/apps/stream-overlay': typeof AppsStreamOverlayRouteWithChildren
   '/components/$recipeKey': typeof ComponentsRecipeKeyRoute
   '/test/$testKey': typeof TestTestKeyRoute
+  '/view/$roomId': typeof ViewRoomIdRoute
   '/apps/': typeof AppsIndexRoute
   '/components/': typeof ComponentsIndexRoute
   '/test/': typeof TestIndexRoute
+  '/apps/stream-overlay/live': typeof AppsStreamOverlayLiveRoute
+  '/apps/stream-overlay/': typeof AppsStreamOverlayIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,11 +131,15 @@ export interface FileRouteTypes {
     | '/'
     | '/$recipeKey'
     | '/apps/$appKey'
+    | '/apps/stream-overlay'
     | '/components/$recipeKey'
     | '/test/$testKey'
+    | '/view/$roomId'
     | '/apps/'
     | '/components/'
     | '/test/'
+    | '/apps/stream-overlay/live'
+    | '/apps/stream-overlay/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -108,27 +147,36 @@ export interface FileRouteTypes {
     | '/apps/$appKey'
     | '/components/$recipeKey'
     | '/test/$testKey'
+    | '/view/$roomId'
     | '/apps'
     | '/components'
     | '/test'
+    | '/apps/stream-overlay/live'
+    | '/apps/stream-overlay'
   id:
     | '__root__'
     | '/'
     | '/$recipeKey'
     | '/apps/$appKey'
+    | '/apps/stream-overlay'
     | '/components/$recipeKey'
     | '/test/$testKey'
+    | '/view/$roomId'
     | '/apps/'
     | '/components/'
     | '/test/'
+    | '/apps/stream-overlay/live'
+    | '/apps/stream-overlay/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RecipeKeyRoute: typeof RecipeKeyRoute
   AppsAppKeyRoute: typeof AppsAppKeyRoute
+  AppsStreamOverlayRoute: typeof AppsStreamOverlayRouteWithChildren
   ComponentsRecipeKeyRoute: typeof ComponentsRecipeKeyRoute
   TestTestKeyRoute: typeof TestTestKeyRoute
+  ViewRoomIdRoute: typeof ViewRoomIdRoute
   AppsIndexRoute: typeof AppsIndexRoute
   ComponentsIndexRoute: typeof ComponentsIndexRoute
   TestIndexRoute: typeof TestIndexRoute
@@ -171,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/view/$roomId': {
+      id: '/view/$roomId'
+      path: '/view/$roomId'
+      fullPath: '/view/$roomId'
+      preLoaderRoute: typeof ViewRoomIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/test/$testKey': {
       id: '/test/$testKey'
       path: '/test/$testKey'
@@ -185,6 +240,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComponentsRecipeKeyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/apps/stream-overlay': {
+      id: '/apps/stream-overlay'
+      path: '/apps/stream-overlay'
+      fullPath: '/apps/stream-overlay'
+      preLoaderRoute: typeof AppsStreamOverlayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/apps/$appKey': {
       id: '/apps/$appKey'
       path: '/apps/$appKey'
@@ -192,15 +254,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppsAppKeyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/apps/stream-overlay/': {
+      id: '/apps/stream-overlay/'
+      path: '/'
+      fullPath: '/apps/stream-overlay/'
+      preLoaderRoute: typeof AppsStreamOverlayIndexRouteImport
+      parentRoute: typeof AppsStreamOverlayRoute
+    }
+    '/apps/stream-overlay/live': {
+      id: '/apps/stream-overlay/live'
+      path: '/live'
+      fullPath: '/apps/stream-overlay/live'
+      preLoaderRoute: typeof AppsStreamOverlayLiveRouteImport
+      parentRoute: typeof AppsStreamOverlayRoute
+    }
   }
 }
+
+interface AppsStreamOverlayRouteChildren {
+  AppsStreamOverlayLiveRoute: typeof AppsStreamOverlayLiveRoute
+  AppsStreamOverlayIndexRoute: typeof AppsStreamOverlayIndexRoute
+}
+
+const AppsStreamOverlayRouteChildren: AppsStreamOverlayRouteChildren = {
+  AppsStreamOverlayLiveRoute: AppsStreamOverlayLiveRoute,
+  AppsStreamOverlayIndexRoute: AppsStreamOverlayIndexRoute,
+}
+
+const AppsStreamOverlayRouteWithChildren =
+  AppsStreamOverlayRoute._addFileChildren(AppsStreamOverlayRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RecipeKeyRoute: RecipeKeyRoute,
   AppsAppKeyRoute: AppsAppKeyRoute,
+  AppsStreamOverlayRoute: AppsStreamOverlayRouteWithChildren,
   ComponentsRecipeKeyRoute: ComponentsRecipeKeyRoute,
   TestTestKeyRoute: TestTestKeyRoute,
+  ViewRoomIdRoute: ViewRoomIdRoute,
   AppsIndexRoute: AppsIndexRoute,
   ComponentsIndexRoute: ComponentsIndexRoute,
   TestIndexRoute: TestIndexRoute,

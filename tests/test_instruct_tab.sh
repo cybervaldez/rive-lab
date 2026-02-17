@@ -16,20 +16,20 @@ fi
 agent-browser open "$BASE_URL/components/progress-bar"
 sleep 2
 
-# 1. Open panel via right-edge "instructions" button
-agent-browser eval "document.querySelector('[data-testid=\"tab-panel\"]')?.click()" 2>/dev/null
+# 1. Open panel via floating "instructions" button
+agent-browser eval "document.querySelector('[data-testid=\"toggle-instruct\"]')?.click()" 2>/dev/null
 sleep 0.5
 
-VALUE=$(browser_eval "document.querySelector('[data-testid=\"overlay-panel\"]')?.classList.contains('overlay-panel--open')")
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"instruct-overlay\"]') !== null")
 [ "$VALUE" = "true" ] && pass "Panel opens on click" || fail "Panel not open: got '$VALUE'"
 
 # 2. Instruct list exists (shown directly, no tab selection needed)
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"instruct-list\"]') !== null")
 [ "$VALUE" = "true" ] && pass "Instruct list exists" || fail "Instruct list not found"
 
-# 3. No overlay tabs exist (contract/events removed)
-VALUE=$(browser_eval "document.querySelector('.overlay-tabs') !== null")
-[ "$VALUE" = "false" ] && pass "No overlay tabs (contract/events removed)" || fail "Overlay tabs still present"
+# 3. No overlay tabs exist inside instruct overlay
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"instruct-overlay\"] .overlay-tabs') !== null")
+[ "$VALUE" = "false" ] && pass "No overlay tabs in instruct panel" || fail "Overlay tabs still present"
 
 # 4. Progress-bar recipe has 7 steps
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"instruct-list\"]')?.querySelectorAll('li').length")
@@ -46,7 +46,7 @@ DETAIL=$(browser_eval "document.querySelector('[data-testid=\"instruct-step-0\"]
 # 7. Switch to toggle-switch → 5 steps
 agent-browser open "$BASE_URL/components/toggle-switch" 2>/dev/null
 sleep 2
-agent-browser eval "document.querySelector('[data-testid=\"tab-panel\"]')?.click()" 2>/dev/null
+agent-browser eval "document.querySelector('[data-testid=\"toggle-instruct\"]')?.click()" 2>/dev/null
 sleep 0.5
 
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"instruct-list\"]')?.querySelectorAll('li').length")

@@ -319,26 +319,49 @@ sleep 3
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-footer-bar\"]') !== null")
 [ "$VALUE" = "true" ] && pass "Debug footer bar visible" || fail "Debug footer bar missing"
 
-# 46. Footer bar shows state value
+# 46. Footer bar shows debug label and context values
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-footer-bar\"]')?.textContent")
+echo "$VALUE" | grep -q "debug" && pass "Footer bar shows debug label" || fail "Footer bar content: '$VALUE'"
 echo "$VALUE" | grep -q "bindings:" && pass "Footer bar shows context values" || fail "Footer bar content: '$VALUE'"
 
-# 47. Click toggle — debug body expands
-browser_eval "document.querySelector('[data-testid=\"debug-footer-toggle\"]')?.click()" > /dev/null
+# 47. Click bar — debug body expands (entire bar is clickable)
+browser_eval "document.querySelector('[data-testid=\"debug-footer-bar\"]')?.click()" > /dev/null
 sleep 0.5
 
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-footer-body\"]') !== null")
-[ "$VALUE" = "true" ] && pass "Debug body expands" || fail "Debug body missing"
+[ "$VALUE" = "true" ] && pass "Debug body expands on bar click" || fail "Debug body missing"
 
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-panel\"]') !== null")
 [ "$VALUE" = "true" ] && pass "DebugPanel renders inside footer body" || fail "DebugPanel missing"
 
-# 48. Click toggle again — debug body collapses
-browser_eval "document.querySelector('[data-testid=\"debug-footer-toggle\"]')?.click()" > /dev/null
+# 47b. Debug panel tabs render (DevTools-style)
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-panel-tabs\"]') !== null")
+[ "$VALUE" = "true" ] && pass "Debug panel tabs render" || fail "Debug panel tabs missing"
+
+# 47c. Context tab is active by default
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-tab-context\"]')?.classList.contains('debug-panel-tab--active')")
+[ "$VALUE" = "true" ] && pass "Context tab active by default" || fail "Context tab not active"
+
+# 47d. Click State tab — switches content
+browser_eval "document.querySelector('[data-testid=\"debug-tab-state\"]')?.click()" > /dev/null
+sleep 0.3
+
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-tab-state\"]')?.classList.contains('debug-panel-tab--active')")
+[ "$VALUE" = "true" ] && pass "State tab activates on click" || fail "State tab not active"
+
+# 47e. Click Events tab — switches content
+browser_eval "document.querySelector('[data-testid=\"debug-tab-events\"]')?.click()" > /dev/null
+sleep 0.3
+
+VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-tab-events\"]')?.classList.contains('debug-panel-tab--active')")
+[ "$VALUE" = "true" ] && pass "Events tab activates on click" || fail "Events tab not active"
+
+# 48. Click bar again — debug body collapses
+browser_eval "document.querySelector('[data-testid=\"debug-footer-bar\"]')?.click()" > /dev/null
 sleep 0.5
 
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"debug-footer-body\"]')")
-[ "$VALUE" = "null" ] && pass "Debug body collapsed" || fail "Debug body still open"
+[ "$VALUE" = "null" ] && pass "Debug body collapsed on bar click" || fail "Debug body still open"
 
 # 49. Instruct toggle button exists
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"toggle-instruct\"]') !== null")

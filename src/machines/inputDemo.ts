@@ -1,11 +1,5 @@
 import { setup, assign } from 'xstate'
-
-const DEFAULT_BINDINGS: Record<string, string> = {
-  INPUT_JUMP: 'Space',
-  INPUT_ATTACK: 'KeyX',
-  INPUT_DEFEND: 'KeyZ',
-  INPUT_DASH: 'ShiftLeft',
-}
+import { DEFAULT_BINDINGS } from '../lib/inputUtils'
 
 export const inputDemoMachine = setup({
   types: {

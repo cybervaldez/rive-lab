@@ -64,10 +64,10 @@ VALUE=$(browser_eval "document.querySelector('[data-testid=\"pagination-dot-2\"]
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"pagination-dot-0\"]')?.classList.contains('active')")
 [ "$VALUE" = "false" ] && pass "Dot 0 is not active" || fail "Dot 0 should not be active: got '$VALUE'"
 
-# 7. Readout matches counter recipe (state=idle, count=0)
-STATE=$(browser_eval "document.querySelector('[data-testid=\"readout-state\"]')?.textContent")
-PROG=$(browser_eval "document.querySelector('[data-testid=\"readout-progress\"]')?.textContent")
-[ "$STATE" = "idle" ] && [ "$PROG" = "0" ] && pass "Counter readout: state=idle, count=0" || fail "Counter readout: state='$STATE', count='$PROG' (expected: idle, 0)"
+# 7. State matches counter recipe (state=idle, count=0)
+STATE=$(browser_eval "document.querySelector('[data-testid=\"app-state\"]')?.textContent")
+COUNT=$(browser_eval "window.__xstate__?.CounterSM?.context()?.count")
+[ "$STATE" = "idle" ] && [ "$COUNT" = "0" ] && pass "Counter: state=idle, count=0" || fail "Counter: state='$STATE', count='$COUNT' (expected: idle, 0)"
 
 agent-browser close 2>/dev/null || true
 print_summary

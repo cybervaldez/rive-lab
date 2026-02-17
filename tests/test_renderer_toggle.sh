@@ -54,7 +54,7 @@ echo ""
 echo "--- PHASE 2: Test wizard URL input ---"
 
 # 6. Open instructions + wizard
-browser_eval "document.querySelector('[data-testid=\"tab-panel\"]')?.click()" > /dev/null
+browser_eval "document.querySelector('[data-testid=\"toggle-instruct\"]')?.click()" > /dev/null
 sleep 0.5
 browser_eval "document.querySelector('[data-testid=\"instruct-test-btn\"]')?.click()" > /dev/null
 sleep 0.5
@@ -81,10 +81,10 @@ sleep 0.3
 VALUE=$(browser_eval "localStorage.getItem('rive-url:test-bench')")
 [ "$VALUE" = "https://cdn.example.com/test-bench.riv" ] && pass "URL stored to localStorage" || fail "Stored: '$VALUE'"
 
-# 11. Close wizard
+# 11. Close wizard and instruct overlay
 browser_eval "document.querySelector('[data-testid=\"test-wizard-close\"]')?.click()" > /dev/null
 sleep 0.3
-browser_eval "document.querySelector('[data-testid=\"right-panel-close\"]')?.click()" > /dev/null
+browser_eval "document.querySelector('[data-testid=\"instruct-close\"]')?.click()" > /dev/null
 sleep 0.3
 
 # ============================================================================

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
+    "ws": "tsx src/server/ws.ts",
     "build": "vite build",
     "start": "node .output/server/index.mjs",
     "test:e2e": "bash tests/test_welcome.sh && bash tests/test_startup.sh && bash tests/test_command_palette.sh && bash tests/test_demo_controls.sh && bash tests/test_contract_tab.sh && bash tests/test_events_tab.sh && bash tests/test_instruct_tab.sh && bash tests/test_theme_toggle.sh && bash tests/test_pagination.sh && bash tests/test_state_readout.sh"
@@ -13,8 +14,10 @@
     "@tanstack/react-router": "^1.159.5",
     "@tanstack/react-start": "^1.159.5",
     "@xstate/react": "^6.0.0",
+    "motion": "^12.34.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "ws": "^8.19.0",
     "xstate": "^5.26.0"
   },
   "engines": {
@@ -23,6 +26,8 @@
   "devDependencies": {
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   }

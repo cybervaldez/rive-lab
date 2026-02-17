@@ -1,26 +1,7 @@
 import { useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import type { DemoProps } from './types'
-
-function formatKeyName(code: string): string {
-  if (!code) return '—'
-  return code
-    .replace('Key', '')
-    .replace('Digit', '')
-    .replace('ShiftLeft', 'L-Shift')
-    .replace('ShiftRight', 'R-Shift')
-    .replace('ControlLeft', 'L-Ctrl')
-    .replace('ControlRight', 'R-Ctrl')
-    .replace('AltLeft', 'L-Alt')
-    .replace('AltRight', 'R-Alt')
-    .replace('ArrowUp', 'Up')
-    .replace('ArrowDown', 'Down')
-    .replace('ArrowLeft', 'Left')
-    .replace('ArrowRight', 'Right')
-}
-
-function actionLabel(action: string): string {
-  return action.replace(/^INPUT_/, '')
-}
+import { formatKeyName, actionLabel } from '../lib/inputUtils'
 
 export function InputDemo({ state, context, send }: DemoProps) {
   const bindings = context.bindings as Record<string, string>
@@ -64,15 +45,20 @@ export function InputDemo({ state, context, send }: DemoProps) {
         {Object.entries(bindings).map(([action, code]) => {
           const isActive = activeInputs.includes(action)
           return (
-            <div
+            <motion.div
               key={action}
               className={`demo-input-action${isActive ? ' demo-input-action--active' : ''}`}
+              animate={isActive
+                ? { scale: 1.05, borderColor: 'var(--color-accent)', background: 'var(--color-accent-dim)' }
+                : { scale: 1, borderColor: 'var(--color-border)', background: 'transparent' }
+              }
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
               data-testid={`input-action-${action}`}
             >
               <span className="demo-input-action-dot" />
               <span className="demo-input-action-name">{actionLabel(action)}</span>
               <span className="demo-input-action-key">[{formatKeyName(code)}]</span>
-            </div>
+            </motion.div>
           )
         })}
       </div>
@@ -92,14 +78,27 @@ export function InputDemo({ state, context, send }: DemoProps) {
       </div>
 
       {/* Mapper Overlay */}
-      {mapperOpen && (
-        <>
-          <div
+      <AnimatePresence>
+        {mapperOpen && (
+          <motion.div
+            key="mapper-backdrop"
             className="demo-input-mapper-backdrop"
             data-testid="mapper-backdrop"
             onClick={handleCloseMapper}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           />
-          <div className="demo-input-mapper" data-testid="mapper-overlay">
+        )}
+        {mapperOpen && (
+          <motion.div
+            key="mapper-overlay"
+            className="demo-input-mapper"
+            data-testid="mapper-overlay"
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+          >
             <div className="demo-input-mapper-header">
               <span className="demo-input-mapper-title">KEY BINDINGS</span>
               <button
@@ -120,9 +119,19 @@ export function InputDemo({ state, context, send }: DemoProps) {
                     data-testid={`mapper-row-${action}`}
                   >
                     <span className="demo-input-mapper-row-name">{actionLabel(action)}</span>
-                    <span className="demo-input-mapper-row-key">
+                    <motion.span
+                      className="demo-input-mapper-row-key"
+                      animate={isThisListening
+                        ? { opacity: [1, 0.4, 1] }
+                        : { opacity: 1 }
+                      }
+                      transition={isThisListening
+                        ? { duration: 1.2, repeat: Infinity, ease: 'easeInOut' }
+                        : { duration: 0 }
+                      }
+                    >
                       {isThisListening ? 'Press a key...' : formatKeyName(code)}
-                    </span>
+                    </motion.span>
                     {isThisListening ? (
                       <button
                         className="demo-btn"
@@ -145,9 +154,9 @@ export function InputDemo({ state, context, send }: DemoProps) {
                 )
               })}
             </div>
-          </div>
-        </>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -23,7 +23,7 @@ agent-browser open "$BASE_URL/components/counter" 2>/dev/null
 sleep 3
 
 # 1. Open instructions panel
-browser_eval "document.querySelector('[data-testid=\"tab-panel\"]')?.click()" > /dev/null
+browser_eval "document.querySelector('[data-testid=\"toggle-instruct\"]')?.click()" > /dev/null
 sleep 1
 
 # 2. RecipePanel renders
@@ -77,7 +77,7 @@ agent-browser open "$BASE_URL/apps/input-demo" 2>/dev/null
 sleep 3
 
 # 10. Open instructions panel
-browser_eval "document.querySelector('[data-testid=\"tab-panel\"]')?.click()" > /dev/null
+browser_eval "document.querySelector('[data-testid=\"toggle-instruct\"]')?.click()" > /dev/null
 sleep 1
 
 # 11. RecipePanel renders

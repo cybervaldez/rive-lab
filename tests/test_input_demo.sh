@@ -134,8 +134,8 @@ VALUE=$(browser_eval "window.__xstate__['InputDemoSM'].context().bindings.INPUT_
 echo ""
 echo "--- PHASE 4: Instruct step context ---"
 
-# 18. Open instructions panel via tab-panel and switch to steps tab
-browser_eval "document.querySelector('[data-testid=\"tab-panel\"]')?.click()" > /dev/null
+# 18. Open instructions panel via toggle-instruct and switch to steps tab
+browser_eval "document.querySelector('[data-testid=\"toggle-instruct\"]')?.click()" > /dev/null
 sleep 1
 browser_eval "document.querySelector('[data-testid=\"recipe-tab-steps\"]')?.click()" > /dev/null
 sleep 0.5
