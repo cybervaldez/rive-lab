@@ -12,7 +12,7 @@ export const toggleSwitchMachine = setup({
   meta: {
     description: 'Binary toggle — flips between off and on.',
     contextProperties: {
-      isActive: { type: 'boolean', description: 'Maps to Rive Boolean property "isActive".' },
+      isActive: { type: 'boolean', direction: 'source-to-target', description: 'Maps to Rive Boolean property "isActive".' },
     },
     riveViewModel: 'ToggleSwitchVM',
     riveStateMachine: 'ToggleSwitchSM',

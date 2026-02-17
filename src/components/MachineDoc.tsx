@@ -65,6 +65,9 @@ export function MachineDoc({ data, stateValue, onClose }: MachineDocProps) {
               <span className="t-prop-range">
                 {prop.range ? `[${prop.range[0]},${prop.range[1]}]` : ''}
               </span>
+              {prop.direction && (
+                <span className="t-prop-direction">{prop.direction}</span>
+              )}
               <span className="t-prop-desc">{prop.description}</span>
             </div>
           ))}

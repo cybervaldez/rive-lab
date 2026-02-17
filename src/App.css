@@ -1025,6 +1025,14 @@ html, body {
   color: var(--md-color-text-whisper);
   flex-shrink: 0;
 }
+.machine-doc .t-prop-direction {
+  font-size: var(--text-3xs);
+  color: var(--color-accent);
+  background: var(--color-accent-dim);
+  padding: 1px var(--space-1);
+  border-radius: var(--radius-xs);
+  margin-right: var(--space-1);
+}
 .machine-doc .t-prop-desc {
   color: var(--md-color-text-tertiary);
 }

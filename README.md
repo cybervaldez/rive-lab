@@ -59,16 +59,33 @@ Every machine self-documents via `meta` and `description` fields so AI tools can
 meta: {
   description: 'Drives a progress bar from idle through loading to complete.',
   contextProperties: {
-    progress: { type: 'number', range: [0, 100], description: 'Maps to Rive Number property "progress".' },
-    statusText: { type: 'string', description: 'Human-readable status label for the current state.' },
-    isActive: { type: 'boolean', description: 'Maps to Rive Boolean property "isActive".' },
+    progress: { type: 'number', range: [0, 100], direction: 'source-to-target', description: 'Maps to Rive Number property "progress".' },
+    statusText: { type: 'string', direction: 'source-to-target', description: 'Human-readable status label for the current state.' },
+    isActive: { type: 'boolean', direction: 'source-to-target', description: 'Maps to Rive Boolean property "isActive".' },
   },
+  stateNodes: [
+    { name: 'idle', initial: true, depth: 0, description: 'Initial resting state.' },
+    { name: 'loading', initial: false, depth: 0, description: 'Actively filling the bar.' },
+    { name: 'complete', initial: false, depth: 0, description: 'Bar is full — waiting for reset.' },
+  ],
+  transitions: [
+    { from: 'idle', event: 'start', target: 'loading', description: 'Kick off the loading sequence.' },
+    { from: 'loading', event: 'complete', target: 'complete', description: 'Mark the bar as done.' },
+    { from: 'complete', event: 'reset', target: 'idle', description: 'Clear the bar and return to idle.' },
+  ],
   riveViewModel: 'ProgressBarVM',
   riveStateMachine: 'ProgressBarSM',
 }
 ```
 
-Every state node and transition carries a `description` string that documents its purpose. Every state handles `{ type: 'reset' }` targeting the initial state — this enables reproducible testing and pipeline resets from any point in the flow.
+The `meta` block is the **single source of truth** for all UI panels (StateGraph, MachineDoc, DebugPanel) and `generateRivePrompt` (`src/lib/generateRivePrompt.ts`). No config parsing needed — the meta declares everything explicitly. Run the prompt generator to produce a designer-ready handoff document with direction glossary, constraints, and integration notes.
+
+**Key fields:**
+- `contextProperties` — each property includes `type`, optional `range`, `direction` (`source-to-target` = JS drives Rive, `target-to-source` = Rive drives JS), and `description`
+- `stateNodes` — explicit list with `name`, `initial`, `depth` (nesting level), and `description`
+- `transitions` — explicit list with `from`, `event`, `target`, and `description`
+
+Every state handles `{ type: 'reset' }` targeting the initial state — this enables reproducible testing and pipeline resets from any point in the flow.
 
 ## Who Is This For
 

@@ -3,7 +3,7 @@ export interface MachineDocData {
   description: string
   riveViewModel: string
   riveStateMachine: string
-  properties: { name: string; type: string; range?: number[]; description: string }[]
+  properties: { name: string; type: string; range?: number[]; direction?: string; description: string }[]
   states: { name: string; isInitial: boolean; description: string; depth: number }[]
   transitions: { from: string; event: string; target: string; description: string }[]
 }
@@ -30,11 +30,13 @@ export function extractMachineDoc(machine: any): MachineDocData {
       name,
       type: def.type ?? 'unknown',
       range: def.range,
+      direction: def.direction,
       description: def.description ?? '',
     })
   }
 
   // States and transitions directly from meta
+  // Note: meta uses `initial` (boolean), mapped to `isInitial` in MachineDocData
   const states: MachineDocData['states'] = (meta.stateNodes ?? []).map((s: any) => ({
     name: s.name,
     isInitial: s.initial ?? false,

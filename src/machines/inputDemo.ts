@@ -28,8 +28,8 @@ export const inputDemoMachine = setup({
   meta: {
     description: 'Maps keyboard keys to abstract input actions. Supports rebinding via a mapper overlay.',
     contextProperties: {
-      bindings: { type: 'object', description: 'Action name to KeyboardEvent.code mapping.' },
-      activeInputs: { type: 'array', description: 'Currently held action names.' },
+      bindings: { type: 'object', direction: 'source-to-target', description: 'Action name to KeyboardEvent.code mapping.' },
+      activeInputs: { type: 'array', direction: 'source-to-target', description: 'Currently held action names.' },
     },
     riveViewModel: 'InputDemoVM',
     riveStateMachine: 'InputDemoSM',

@@ -113,11 +113,11 @@ export const streamOverlayMachine = setup({
   meta: {
     description: 'Streamer overlay — maps multiple input sources to visual effects. Keyboard primary, voice/face/API layered on top.',
     contextProperties: {
-      bindings: { type: 'object', description: 'Action name to KeyboardEvent.code mapping.' },
-      activeInputs: { type: 'array', description: 'Currently active action names.' },
-      activeTab: { type: 'string', description: 'Active control room tab.' },
-      sources: { type: 'object', description: 'Input source enable/disable states.' },
-      mapperOpen: { type: 'boolean', description: 'Whether the mapper panel is in rebind mode.' },
+      bindings: { type: 'object', direction: 'source-to-target', description: 'Action name to KeyboardEvent.code mapping.' },
+      activeInputs: { type: 'array', direction: 'source-to-target', description: 'Currently active action names.' },
+      activeTab: { type: 'string', direction: 'source-to-target', description: 'Active control room tab.' },
+      sources: { type: 'object', direction: 'source-to-target', description: 'Input source enable/disable states.' },
+      mapperOpen: { type: 'boolean', direction: 'source-to-target', description: 'Whether the mapper panel is in rebind mode.' },
     },
     riveViewModel: 'StreamOverlayVM',
     riveStateMachine: 'StreamOverlaySM',

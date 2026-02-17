@@ -121,6 +121,8 @@ Every XState machine must include structured metadata so AI tools can generate i
 
 ### Root `meta` block
 
+The meta block is the **single source of truth** for all UI panels and `generateRivePrompt`. It explicitly declares all properties, states, and transitions — no config parsing needed.
+
 ```typescript
 meta: {
   description: 'One-line purpose of the machine.',
@@ -128,21 +130,37 @@ meta: {
     progress: {
       type: 'number',
       range: [0, 100],
+      direction: 'source-to-target',
       description: 'Maps to Rive Number property "progress".',
     },
     isActive: {
       type: 'boolean',
+      direction: 'source-to-target',
       description: 'Maps to Rive Boolean property "isActive".',
     },
   },
+  stateNodes: [
+    { name: 'idle', initial: true, depth: 0, description: 'Initial resting state.' },
+    { name: 'loading', initial: false, depth: 0, description: 'Actively filling the bar.' },
+    { name: 'complete', initial: false, depth: 0, description: 'Bar is full — waiting for reset.' },
+  ],
+  transitions: [
+    { from: 'idle', event: 'start', target: 'loading', description: 'Kick off the loading sequence.' },
+    { from: 'loading', event: 'complete', target: 'complete', description: 'Mark the bar as done.' },
+    { from: 'complete', event: 'reset', target: 'idle', description: 'Clear the bar and return to idle.' },
+  ],
   riveViewModel: 'ProgressBarVM',
   riveStateMachine: 'ProgressBarSM',
 }
 ```
 
+**Direction values:**
+- `source-to-target` — JS drives Rive (default for most properties)
+- `target-to-source` — Rive drives JS (Rive-originated values)
+
 ### State `description`
 
-Every state node must have a `description`:
+Every state node must have a `description` on the XState state AND an entry in `meta.stateNodes`:
 
 ```typescript
 idle: {
@@ -153,7 +171,7 @@ idle: {
 
 ### Transition `description`
 
-Every transition must have a `description`:
+Every transition must have a `description` on the XState transition AND an entry in `meta.transitions`:
 
 ```typescript
 start: {
@@ -169,9 +187,12 @@ start: {
 
 Before giving a machine definition to a Rive designer, verify:
 
-- [ ] Machine has root `meta` with `description`, `contextProperties`, `riveViewModel`, `riveStateMachine`
-- [ ] Every state node has a `description`
-- [ ] Every transition has a `description`
+- [ ] Machine has root `meta` with `description`, `contextProperties`, `stateNodes`, `transitions`, `riveViewModel`, `riveStateMachine`
+- [ ] Every `contextProperties` entry has `type`, `direction`, and `description`
+- [ ] `stateNodes` array is complete — every state node in the machine has a matching entry
+- [ ] `transitions` array is complete — every transition in the machine has a matching entry
+- [ ] Every state node has a `description` (on both the XState state and the `stateNodes` entry)
+- [ ] Every transition has a `description` (on both the XState transition and the `transitions` entry)
 - [ ] Every state handles `{ type: 'reset' }` targeting the initial state
 - [ ] Context property names match planned Rive ViewModel property names exactly
 - [ ] Event type strings match planned Rive trigger names exactly

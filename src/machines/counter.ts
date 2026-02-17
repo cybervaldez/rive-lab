@@ -15,7 +15,7 @@ export const counterMachine = setup({
   meta: {
     description: 'Increments a count from 0 to 10, then locks at maxed.',
     contextProperties: {
-      count: { type: 'number', range: [0, 10], description: 'Maps to Rive Number property "count".' },
+      count: { type: 'number', range: [0, 10], direction: 'source-to-target', description: 'Maps to Rive Number property "count".' },
     },
     riveViewModel: 'CounterVM',
     riveStateMachine: 'CounterSM',

@@ -204,7 +204,9 @@ AI tools need to parse machine structure programmatically; Rive designers need c
 
 ### Root `meta` Block
 
-Every machine definition includes a root `meta` object. Real example from `progressBarMachine`:
+Every machine definition includes a root `meta` object. The meta block is the **single source of truth** — all UI panels (StateGraph, MachineDoc, DebugPanel) and `generateRivePrompt` read exclusively from it. No config parsing needed.
+
+Real example from `progressBarMachine`:
 
 ```typescript
 meta: {
@@ -213,26 +215,45 @@ meta: {
     progress: {
       type: 'number',
       range: [0, 100],
+      direction: 'source-to-target',
       description: 'Maps to Rive Number property "progress".',
     },
     statusText: {
       type: 'string',
+      direction: 'source-to-target',
       description: 'Human-readable status label for the current state.',
     },
     isActive: {
       type: 'boolean',
+      direction: 'source-to-target',
       description: 'Maps to Rive Boolean property "isActive".',
     },
   },
+  stateNodes: [
+    { name: 'idle', initial: true, depth: 0, description: 'Initial resting state.' },
+    { name: 'loading', initial: false, depth: 0, description: 'Actively filling the bar.' },
+    { name: 'complete', initial: false, depth: 0, description: 'Bar is full — waiting for reset.' },
+    { name: 'error', initial: false, depth: 0, description: 'Something went wrong.' },
+  ],
+  transitions: [
+    { from: 'idle', event: 'start', target: 'loading', description: 'Kick off the loading sequence.' },
+    { from: 'loading', event: 'complete', target: 'complete', description: 'Mark the bar as done.' },
+    { from: 'complete', event: 'reset', target: 'idle', description: 'Clear the bar and return to idle.' },
+  ],
   riveViewModel: 'ProgressBarVM',
   riveStateMachine: 'ProgressBarSM',
 }
 ```
 
 - `description` — one-line purpose of the machine
-- `contextProperties` — each property with its `type`, optional `range`, and `description` documenting its Rive mapping
+- `contextProperties` — each property with `type`, optional `range`, `direction`, and `description`
+  - `direction`: `source-to-target` (JS drives Rive, default) or `target-to-source` (Rive drives JS)
+- `stateNodes` — explicit array with `name`, `initial` (boolean), `depth` (nesting level), and `description`
+- `transitions` — explicit array with `from`, `event`, `target`, and `description`
 - `riveViewModel` — the exact ViewModel name the Rive designer must use
 - `riveStateMachine` — the exact State Machine name in the Rive Editor
+
+> **Note:** `stateNodes` uses `initial` (boolean) in the meta declaration. `extractMachineDoc` maps this to `isInitial` in the `MachineDocData` interface.
 
 ### State `description`
 

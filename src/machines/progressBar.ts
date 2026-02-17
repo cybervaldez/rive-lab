@@ -16,9 +16,9 @@ export const progressBarMachine = setup({
   meta: {
     description: 'Drives a progress bar from idle through loading to complete.',
     contextProperties: {
-      progress: { type: 'number', range: [0, 100], description: 'Maps to Rive Number property "progress".' },
-      statusText: { type: 'string', description: 'Human-readable status label for the current state.' },
-      isActive: { type: 'boolean', description: 'Maps to Rive Boolean property "isActive".' },
+      progress: { type: 'number', range: [0, 100], direction: 'source-to-target', description: 'Maps to Rive Number property "progress".' },
+      statusText: { type: 'string', direction: 'source-to-target', description: 'Human-readable status label for the current state.' },
+      isActive: { type: 'boolean', direction: 'source-to-target', description: 'Maps to Rive Boolean property "isActive".' },
     },
     riveViewModel: 'ProgressBarVM',
     riveStateMachine: 'ProgressBarSM',
