@@ -19,6 +19,20 @@ export const counterMachine = setup({
     },
     riveViewModel: 'CounterVM',
     riveStateMachine: 'CounterSM',
+    stateNodes: [
+      { name: 'idle', initial: true, depth: 0, description: 'Counter is at zero — waiting for first increment.' },
+      { name: 'counting', initial: false, depth: 0, description: 'Actively counting — between 1 and 9.' },
+      { name: 'maxed', initial: false, depth: 0, description: 'Counter hit the ceiling (10) — only reset can continue.' },
+    ],
+    transitions: [
+      { from: 'idle', event: 'increment', target: 'maxed', description: 'Jump straight to maxed if this increment hits 10.' },
+      { from: 'idle', event: 'increment', target: 'counting', description: 'Start counting — move to counting state.' },
+      { from: 'idle', event: 'reset', target: 'idle', description: 'Self-transition to guarantee a clean idle state.' },
+      { from: 'counting', event: 'increment', target: 'maxed', description: 'Cap at 10 and lock.' },
+      { from: 'counting', event: 'increment', target: '(self)', description: 'Add one and stay in counting.' },
+      { from: 'counting', event: 'reset', target: 'idle', description: 'Reset count to 0 and return to idle.' },
+      { from: 'maxed', event: 'reset', target: 'idle', description: 'Clear count and return to idle.' },
+    ],
   },
   states: {
     idle: {

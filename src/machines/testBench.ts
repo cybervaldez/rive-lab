@@ -73,6 +73,23 @@ export const testBenchMachine = setup({
     },
     riveViewModel: 'TestBenchVM',
     riveStateMachine: 'TestBenchSM',
+    stateNodes: [
+      { name: 'idle', initial: true, depth: 0, description: 'Resting state — all properties at defaults.' },
+      { name: 'active', initial: false, depth: 0, description: 'Main working state — accepts property updates and Rive interactions.' },
+      { name: 'complete', initial: false, depth: 0, description: 'Finished state — only reset can continue. Rive should fire onComplete event here.' },
+    ],
+    transitions: [
+      { from: 'idle', event: 'activate', target: 'active', description: 'Trigger: idle → active. Sets isActive=true, mode=active.' },
+      { from: 'idle', event: 'reset', target: 'idle', description: 'Self-transition to guarantee clean idle.' },
+      { from: 'active', event: 'SET_PROGRESS', target: '(self)', description: 'Update progress number (Source→Target).' },
+      { from: 'active', event: 'SET_LABEL', target: '(self)', description: 'Update label string (Source→Target).' },
+      { from: 'active', event: 'SLIDER_CHANGED', target: '(self)', description: 'Rive slider value changed (Target→Source). Updates sliderValue from Rive.' },
+      { from: 'active', event: 'RIVE_COMPLETE', target: '(self)', description: 'Rive Event received from animation. Increments counter.' },
+      { from: 'active', event: 'complete', target: 'complete', description: 'Trigger: active → complete. Sets progress=100, isActive=false.' },
+      { from: 'active', event: 'reset', target: 'idle', description: 'Abort and return to idle.' },
+      { from: 'complete', event: 'RIVE_COMPLETE', target: '(self)', description: 'Accept late Rive Events in complete state.' },
+      { from: 'complete', event: 'reset', target: 'idle', description: 'Clear everything and return to idle.' },
+    ],
   },
   states: {
     idle: {

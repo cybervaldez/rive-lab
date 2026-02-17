@@ -121,6 +121,26 @@ export const streamOverlayMachine = setup({
     },
     riveViewModel: 'StreamOverlayVM',
     riveStateMachine: 'StreamOverlaySM',
+    stateNodes: [
+      { name: 'active', initial: true, depth: 0, description: 'Normal mode — input events map to active actions.' },
+      { name: 'configuring', initial: false, depth: 0, description: 'Mapper is active — user can view and rebind keys.' },
+      { name: 'configuring.idle', initial: true, depth: 1, description: 'Waiting for user to pick an action to rebind.' },
+      { name: 'configuring.listening', initial: false, depth: 1, description: 'Waiting for user to press a key to bind.' },
+    ],
+    transitions: [
+      { from: 'active', event: 'KEY_DOWN', target: '(self)', description: 'Map key press to input action.' },
+      { from: 'active', event: 'KEY_UP', target: '(self)', description: 'Release input action.' },
+      { from: 'active', event: 'TRIGGER_INPUT', target: '(self)', description: 'External trigger activates an input action.' },
+      { from: 'active', event: 'CLEAR_TRIGGER', target: '(self)', description: 'Clear a triggered input action.' },
+      { from: 'active', event: 'OPEN_MAPPER', target: 'configuring', description: 'Open the key mapper overlay.' },
+      { from: 'configuring.idle', event: 'START_REBIND', target: 'configuring.listening', description: 'Start listening for a key press to rebind.' },
+      { from: 'configuring.idle', event: 'CLOSE_MAPPER', target: 'active', description: 'Close mapper and return to active.' },
+      { from: 'configuring.listening', event: 'KEY_DOWN', target: 'configuring.idle', description: 'Bind the pressed key and return to idle.' },
+      { from: 'configuring.listening', event: 'CANCEL_REBIND', target: 'configuring.idle', description: 'Cancel rebind and return to idle.' },
+      { from: '(root)', event: 'SET_TAB', target: '(self)', description: 'Switch the active control room tab.' },
+      { from: '(root)', event: 'WS_STATUS', target: '(self)', description: 'Update WebSocket connection status.' },
+      { from: '(root)', event: 'reset', target: 'active', description: 'Reset to initial state.' },
+    ],
   },
   on: {
     SET_TAB: {

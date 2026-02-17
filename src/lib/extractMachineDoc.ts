@@ -8,59 +8,11 @@ export interface MachineDocData {
   transitions: { from: string; event: string; target: string; description: string }[]
 }
 
-function extractStatesAndTransitions(
-  statesDef: Record<string, any>,
-  initialState: string,
-  prefix: string,
-  depth: number,
-  isParentParallel: boolean,
-): { states: MachineDocData['states']; transitions: MachineDocData['transitions'] } {
-  const states: MachineDocData['states'] = []
-  const transitions: MachineDocData['transitions'] = []
-
-  for (const [stateName, stateDef] of Object.entries(statesDef) as [string, any][]) {
-    const fullName = prefix ? `${prefix}.${stateName}` : stateName
-
-    states.push({
-      name: fullName,
-      isInitial: isParentParallel || stateName === initialState,
-      description: stateDef.description ?? '',
-      depth,
-    })
-
-    // Transitions from state.on
-    const on = stateDef.on ?? {}
-    for (const [eventName, handler] of Object.entries(on) as [string, any][]) {
-      const handlers = Array.isArray(handler) ? handler : [handler]
-      for (const h of handlers) {
-        if (typeof h === 'string') {
-          transitions.push({ from: fullName, event: eventName, target: h, description: '' })
-          continue
-        }
-        const target = h.target ? String(h.target) : '(self)'
-        transitions.push({
-          from: fullName,
-          event: eventName,
-          target,
-          description: h.description ?? '',
-        })
-      }
-    }
-
-    // Recurse into nested states
-    if (stateDef.states) {
-      const isParallel = stateDef.type === 'parallel'
-      const childInitial = isParallel ? '' : (stateDef.initial ?? '')
-      const { states: childStates, transitions: childTransitions } =
-        extractStatesAndTransitions(stateDef.states, childInitial, fullName, depth + 1, isParallel)
-      states.push(...childStates)
-      transitions.push(...childTransitions)
-    }
-  }
-
-  return { states, transitions }
-}
-
+/**
+ * Reads machine documentation from the meta block.
+ * All state nodes, transitions, and properties are declared explicitly
+ * in each machine's meta — no config parsing needed.
+ */
 export function extractMachineDoc(machine: any): MachineDocData {
   const config = machine.config
   const meta = config.meta ?? {}
@@ -82,35 +34,20 @@ export function extractMachineDoc(machine: any): MachineDocData {
     })
   }
 
-  // States and transitions (recursive)
-  const isParallel = config.type === 'parallel'
-  const initialState = isParallel ? '' : (config.initial ?? '')
-  const { states, transitions } = extractStatesAndTransitions(
-    config.states ?? {},
-    initialState,
-    '',
-    0,
-    isParallel,
-  )
+  // States and transitions directly from meta
+  const states: MachineDocData['states'] = (meta.stateNodes ?? []).map((s: any) => ({
+    name: s.name,
+    isInitial: s.initial ?? false,
+    description: s.description ?? '',
+    depth: s.depth ?? 0,
+  }))
 
-  // Root-level transitions (on handlers at machine root)
-  const rootOn = config.on ?? {}
-  for (const [eventName, handler] of Object.entries(rootOn) as [string, any][]) {
-    const handlers = Array.isArray(handler) ? handler : [handler]
-    for (const h of handlers) {
-      if (typeof h === 'string') {
-        transitions.push({ from: '(root)', event: eventName, target: h, description: '' })
-        continue
-      }
-      const target = h.target ? String(h.target) : '(self)'
-      transitions.push({
-        from: '(root)',
-        event: eventName,
-        target,
-        description: h.description ?? '',
-      })
-    }
-  }
+  const transitions: MachineDocData['transitions'] = (meta.transitions ?? []).map((t: any) => ({
+    from: t.from,
+    event: t.event,
+    target: t.target,
+    description: t.description ?? '',
+  }))
 
   return { id, description, riveViewModel, riveStateMachine, properties, states, transitions }
 }

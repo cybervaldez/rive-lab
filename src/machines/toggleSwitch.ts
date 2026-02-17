@@ -16,6 +16,16 @@ export const toggleSwitchMachine = setup({
     },
     riveViewModel: 'ToggleSwitchVM',
     riveStateMachine: 'ToggleSwitchSM',
+    stateNodes: [
+      { name: 'off', initial: true, depth: 0, description: 'Switch is in the off position (initial).' },
+      { name: 'on', initial: false, depth: 0, description: 'Switch is in the on position.' },
+    ],
+    transitions: [
+      { from: 'off', event: 'toggle', target: 'on', description: 'Flip the switch on.' },
+      { from: 'off', event: 'reset', target: 'off', description: 'Ensure switch is off (self-transition).' },
+      { from: 'on', event: 'toggle', target: 'off', description: 'Flip the switch off.' },
+      { from: 'on', event: 'reset', target: 'off', description: 'Force switch back to off.' },
+    ],
   },
   states: {
     off: {
