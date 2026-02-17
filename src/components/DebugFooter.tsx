@@ -88,7 +88,6 @@ export function DebugFooter({
           <span className="debug-footer-label" data-testid="debug-footer-toggle">
             debug {isOpen ? '\u25BC' : '\u25B2'}
           </span>
-          <span className="debug-footer-state-badge">{stateValue}</span>
           {bindingCount > 0 && (
             <span className="debug-footer-bar-stat">bindings: {bindingCount}</span>
           )}

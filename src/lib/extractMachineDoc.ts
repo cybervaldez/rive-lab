@@ -13,6 +13,7 @@ function extractStatesAndTransitions(
   initialState: string,
   prefix: string,
   depth: number,
+  isParentParallel: boolean,
 ): { states: MachineDocData['states']; transitions: MachineDocData['transitions'] } {
   const states: MachineDocData['states'] = []
   const transitions: MachineDocData['transitions'] = []
@@ -22,7 +23,7 @@ function extractStatesAndTransitions(
 
     states.push({
       name: fullName,
-      isInitial: stateName === initialState,
+      isInitial: isParentParallel || stateName === initialState,
       description: stateDef.description ?? '',
       depth,
     })
@@ -32,6 +33,10 @@ function extractStatesAndTransitions(
     for (const [eventName, handler] of Object.entries(on) as [string, any][]) {
       const handlers = Array.isArray(handler) ? handler : [handler]
       for (const h of handlers) {
+        if (typeof h === 'string') {
+          transitions.push({ from: fullName, event: eventName, target: h, description: '' })
+          continue
+        }
         const target = h.target ? String(h.target) : '(self)'
         transitions.push({
           from: fullName,
@@ -44,9 +49,10 @@ function extractStatesAndTransitions(
 
     // Recurse into nested states
     if (stateDef.states) {
-      const childInitial = stateDef.initial ?? ''
+      const isParallel = stateDef.type === 'parallel'
+      const childInitial = isParallel ? '' : (stateDef.initial ?? '')
       const { states: childStates, transitions: childTransitions } =
-        extractStatesAndTransitions(stateDef.states, childInitial, fullName, depth + 1)
+        extractStatesAndTransitions(stateDef.states, childInitial, fullName, depth + 1, isParallel)
       states.push(...childStates)
       transitions.push(...childTransitions)
     }
@@ -77,13 +83,34 @@ export function extractMachineDoc(machine: any): MachineDocData {
   }
 
   // States and transitions (recursive)
-  const initialState = config.initial ?? ''
+  const isParallel = config.type === 'parallel'
+  const initialState = isParallel ? '' : (config.initial ?? '')
   const { states, transitions } = extractStatesAndTransitions(
     config.states ?? {},
     initialState,
     '',
     0,
+    isParallel,
   )
+
+  // Root-level transitions (on handlers at machine root)
+  const rootOn = config.on ?? {}
+  for (const [eventName, handler] of Object.entries(rootOn) as [string, any][]) {
+    const handlers = Array.isArray(handler) ? handler : [handler]
+    for (const h of handlers) {
+      if (typeof h === 'string') {
+        transitions.push({ from: '(root)', event: eventName, target: h, description: '' })
+        continue
+      }
+      const target = h.target ? String(h.target) : '(self)'
+      transitions.push({
+        from: '(root)',
+        event: eventName,
+        target,
+        description: h.description ?? '',
+      })
+    }
+  }
 
   return { id, description, riveViewModel, riveStateMachine, properties, states, transitions }
 }

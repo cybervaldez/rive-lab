@@ -72,39 +72,44 @@ echo "$VALUE" | grep -q "JUMP" && echo "$VALUE" | grep -q "ATTACK" && echo "$VAL
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"btn-open-mapper\"]')?.textContent")
 echo "$VALUE" | grep -qi "configure" && pass "Configure keys button present" || fail "Configure button missing: '$VALUE'"
 
-# 9. Topbar shows live state (not static)
+# 9. Topbar shows live state (parallel state JSON)
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"app-state\"]')?.textContent")
-[ "$VALUE" = "active" ] && pass "Topbar shows live state: active" || fail "Expected 'active', got '$VALUE'"
+echo "$VALUE" | grep -q "receiver" && echo "$VALUE" | grep -q "active" \
+    && pass "Topbar shows parallel state: $VALUE" || fail "Expected parallel state, got '$VALUE'"
 
 # 10. XState debug API exposed
 VALUE=$(browser_eval "typeof window.__xstate__?.InputDemoSM?.state")
 [ "$VALUE" = "function" ] && pass "window.__xstate__.InputDemoSM exposed" || fail "XState debug not found: $VALUE"
 
 # ============================================================================
-# PHASE 3: Machine state transitions via window API
+# PHASE 3: Machine state transitions via window API (parallel states)
 # ============================================================================
 echo ""
-echo "--- PHASE 3: Machine state transitions ---"
+echo "--- PHASE 3: Machine state transitions (parallel) ---"
 
-# 11. Initial state is 'active'
-VALUE=$(browser_eval "window.__xstate__['InputDemoSM'].state()")
-[ "$VALUE" = "active" ] && pass "Initial state: active" || fail "Initial state: $VALUE"
+# 11. Initial state: receiver=active, mapper=closed
+RECEIVER=$(browser_eval "window.__xstate__['InputDemoSM'].state().receiver")
+MAPPER=$(browser_eval "window.__xstate__['InputDemoSM'].state().mapper")
+[ "$RECEIVER" = "active" ] && [ "$MAPPER" = "closed" ] \
+    && pass "Initial state: receiver=active, mapper=closed" || fail "Initial: receiver='$RECEIVER', mapper='$MAPPER'"
 
-# 12. OPEN_MAPPER transitions to configuring.idle
+# 12. OPEN_MAPPER: receiver→paused, mapper→open.idle
 browser_eval "window.__xstate__['InputDemoSM'].send({ type: 'OPEN_MAPPER' })" > /dev/null
 sleep 0.5
-VALUE=$(browser_eval "JSON.stringify(window.__xstate__['InputDemoSM'].state())")
-echo "$VALUE" | grep -q "configuring" && pass "OPEN_MAPPER -> configuring state" || fail "Expected configuring, got $VALUE"
+RECEIVER=$(browser_eval "window.__xstate__['InputDemoSM'].state().receiver")
+MAPPER_OPEN=$(browser_eval "window.__xstate__['InputDemoSM'].state().mapper?.open")
+[ "$RECEIVER" = "paused" ] && [ "$MAPPER_OPEN" = "idle" ] \
+    && pass "OPEN_MAPPER -> receiver=paused, mapper.open=idle" || fail "OPEN_MAPPER: receiver='$RECEIVER', mapper.open='$MAPPER_OPEN'"
 
 # 13. Mapper overlay appears
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"mapper-overlay\"]') !== null")
 [ "$VALUE" = "true" ] && pass "Mapper overlay rendered" || fail "Mapper overlay not found"
 
-# 14. START_REBIND transitions to listening
+# 14. START_REBIND: mapper→open.listening
 browser_eval "window.__xstate__['InputDemoSM'].send({ type: 'START_REBIND', action: 'INPUT_JUMP' })" > /dev/null
 sleep 0.5
-VALUE=$(browser_eval "JSON.stringify(window.__xstate__['InputDemoSM'].state())")
-echo "$VALUE" | grep -q "listening" && pass "START_REBIND -> listening" || fail "Expected listening, got $VALUE"
+MAPPER_OPEN=$(browser_eval "window.__xstate__['InputDemoSM'].state().mapper?.open")
+[ "$MAPPER_OPEN" = "listening" ] && pass "START_REBIND -> mapper.open=listening" || fail "Expected listening, got '$MAPPER_OPEN'"
 
 # 15. KEY_DOWN rebinds and returns to idle
 browser_eval "window.__xstate__['InputDemoSM'].send({ type: 'KEY_DOWN', code: 'KeyW' })" > /dev/null
@@ -120,11 +125,13 @@ sleep 0.5
 VALUE=$(browser_eval "window.__xstate__['InputDemoSM'].context().bindings.INPUT_JUMP")
 [ "$VALUE" = "" ] && pass "Conflict resolved: old INPUT_JUMP binding cleared" || fail "Old binding not cleared: '$VALUE'"
 
-# 17. Reset restores defaults
+# 17. Reset restores defaults (parallel initial state)
 browser_eval "window.__xstate__['InputDemoSM'].reset()" > /dev/null
 sleep 0.5
-VALUE=$(browser_eval "window.__xstate__['InputDemoSM'].state()")
-[ "$VALUE" = "active" ] && pass "Reset -> active state" || fail "Reset state: $VALUE"
+RECEIVER=$(browser_eval "window.__xstate__['InputDemoSM'].state().receiver")
+MAPPER=$(browser_eval "window.__xstate__['InputDemoSM'].state().mapper")
+[ "$RECEIVER" = "active" ] && [ "$MAPPER" = "closed" ] \
+    && pass "Reset -> receiver=active, mapper=closed" || fail "Reset: receiver='$RECEIVER', mapper='$MAPPER'"
 VALUE=$(browser_eval "window.__xstate__['InputDemoSM'].context().bindings.INPUT_JUMP")
 [ "$VALUE" = "Space" ] && pass "Reset restored INPUT_JUMP to Space" || fail "Reset binding: $VALUE"
 

@@ -6,9 +6,14 @@ import { formatKeyName, actionLabel } from '../lib/inputUtils'
 export function InputDemo({ state, context, send }: DemoProps) {
   const bindings = context.bindings as Record<string, string>
   const activeInputs = context.activeInputs as string[]
-  const mapperOpen = context.mapperOpen as boolean
   const listeningAction = context.listeningAction as string | null
   const boundCodes = new Set(Object.values(bindings))
+
+  // Derive mapper state from parallel state value
+  const stateObj = state as unknown as Record<string, any>
+  const mapperState = stateObj?.mapper
+  const mapperOpen = typeof mapperState === 'object' && mapperState !== null
+  const isListening = mapperOpen && mapperState?.open === 'listening'
 
   // Keyboard listeners
   useEffect(() => {
@@ -33,10 +38,6 @@ export function InputDemo({ state, context, send }: DemoProps) {
   const handleStartRebind = useCallback((action: string) => send({ type: 'START_REBIND', action }), [send])
   const handleCancelRebind = useCallback(() => send({ type: 'CANCEL_REBIND' }), [send])
   const handleReset = useCallback(() => send({ type: 'reset' }), [send])
-
-  const isListening = typeof state === 'string'
-    ? false
-    : (state as any)?.configuring === 'listening'
 
   return (
     <div className="demo-input" data-testid="demo-input">

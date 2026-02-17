@@ -1,5 +1,5 @@
 #!/bin/bash
-# tests/test_pagination.sh — Verify prev/next cycling through recipes
+# tests/test_pagination.sh — Verify prev/next cycling through recipes + machine initial values
 set +e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/test_utils.sh"
@@ -31,6 +31,12 @@ pagination_click() {
 }
 
 # Start at index 0 (progress-bar)
+
+# ============================================================================
+# PHASE 1: Navigation cycling
+# ============================================================================
+echo ""
+echo "--- PHASE 1: Navigation cycling ---"
 
 # 1. Next: 0 → 1 (toggle-switch)
 pagination_click "pagination-next"
@@ -64,10 +70,33 @@ VALUE=$(browser_eval "document.querySelector('[data-testid=\"pagination-dot-2\"]
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"pagination-dot-0\"]')?.classList.contains('active')")
 [ "$VALUE" = "false" ] && pass "Dot 0 is not active" || fail "Dot 0 should not be active: got '$VALUE'"
 
-# 7. State matches counter recipe (state=idle, count=0)
+# ============================================================================
+# PHASE 2: Machine initial values on navigation
+# ============================================================================
+echo ""
+echo "--- PHASE 2: Machine initial values on navigation ---"
+
+# 7. Counter: initial state=idle, count=0 (already on counter page from Phase 1)
 STATE=$(browser_eval "document.querySelector('[data-testid=\"app-state\"]')?.textContent")
 COUNT=$(browser_eval "window.__xstate__?.CounterSM?.context()?.count")
 [ "$STATE" = "idle" ] && [ "$COUNT" = "0" ] && pass "Counter: state=idle, count=0" || fail "Counter: state='$STATE', count='$COUNT' (expected: idle, 0)"
+
+# 8. Navigate to progress-bar, verify initial state=idle, progress=0
+pagination_click "pagination-next"
+STATE=$(browser_eval "document.querySelector('[data-testid=\"app-state\"]')?.textContent")
+PROGRESS=$(browser_eval "window.__xstate__?.ProgressBarSM?.context()?.progress")
+[ "$STATE" = "idle" ] && [ "$PROGRESS" = "0" ] && pass "Progress bar: state=idle, progress=0" || fail "Progress bar: state='$STATE', progress='$PROGRESS' (expected: idle, 0)"
+
+# 9. Navigate to toggle-switch, verify initial state=off
+pagination_click "pagination-next"
+STATE=$(browser_eval "document.querySelector('[data-testid=\"app-state\"]')?.textContent")
+[ "$STATE" = "off" ] && pass "Toggle switch: state=off" || fail "Toggle switch: state='$STATE' (expected: off)"
+
+# 10. Navigate to counter, verify fresh initial state=idle, count=0
+pagination_click "pagination-next"
+STATE=$(browser_eval "document.querySelector('[data-testid=\"app-state\"]')?.textContent")
+COUNT=$(browser_eval "window.__xstate__?.CounterSM?.context()?.count")
+[ "$STATE" = "idle" ] && [ "$COUNT" = "0" ] && pass "Counter after full cycle: state=idle, count=0" || fail "Counter after cycle: state='$STATE', count='$COUNT' (expected: idle, 0)"
 
 agent-browser close 2>/dev/null || true
 print_summary

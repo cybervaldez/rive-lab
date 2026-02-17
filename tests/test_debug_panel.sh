@@ -189,12 +189,12 @@ sleep 0.3
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"state-graph-current\"]')?.textContent")
 echo "$VALUE" | grep -q "active" && pass "State graph shows active state" || fail "State graph: '$VALUE'"
 
-# 22. Transition to configuring — state graph updates
+# 22. Transition to mapper open — state graph updates (parallel state)
 browser_eval "window.__xstate__['InputDemoSM'].send({ type: 'OPEN_MAPPER' })" > /dev/null
 sleep 0.5
 
 VALUE=$(browser_eval "document.querySelector('[data-testid=\"state-graph-current\"]')?.textContent")
-echo "$VALUE" | grep -q "configuring" && pass "Graph shows configuring after transition" || fail "Graph: '$VALUE'"
+echo "$VALUE" | grep -q "paused" && echo "$VALUE" | grep -q "open" && pass "Graph shows paused+open after OPEN_MAPPER" || fail "Graph: '$VALUE'"
 
 # 23. Switch to Events tab — log captured OPEN_MAPPER
 browser_eval "document.querySelector('[data-testid=\"debug-tab-events\"]')?.click()" > /dev/null

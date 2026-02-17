@@ -84,16 +84,16 @@ function AppDetailPage() {
   const riveViewModel = (riveMeta?.riveViewModel as string) ?? ''
   const riveStateMachine = (riveMeta?.riveStateMachine as string) ?? ''
 
-  // Close overlays on Escape (only when mapper is not open)
+  // Close overlays on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !ctx.mapperOpen) {
+      if (e.key === 'Escape') {
         inspector.resetPanels()
       }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [ctx.mapperOpen, inspector.resetPanels])
+  }, [inspector.resetPanels])
 
   // Reset machine when switching renderers — Rive can't catch up to mid-flight state
   const switchRenderer = (next: 'html' | 'rive') => {

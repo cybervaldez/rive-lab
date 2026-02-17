@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import type { Recipe } from '../lib/recipes'
 import type { MachineDocData } from '../lib/extractMachineDoc'
+import { generateRivePrompt } from '../lib/generateRivePrompt'
 import { MachineDoc } from './MachineDoc'
 
 type TabId = 'concept' | 'steps' | 'reference'
@@ -165,8 +166,27 @@ function ReferenceTab({
   machineDocData: MachineDocData
   stateValue: string
 }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyPrompt = useCallback(() => {
+    const prompt = generateRivePrompt(machineDocData)
+    navigator.clipboard.writeText(prompt).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }, [machineDocData])
+
   return (
     <div className="reference-tab" data-testid="reference-tab">
+      <div className="reference-tab-actions" data-testid="reference-tab-actions">
+        <button
+          className="demo-btn"
+          data-testid="copy-rive-prompt"
+          onClick={handleCopyPrompt}
+        >
+          {copied ? 'copied!' : 'copy rive prompt'}
+        </button>
+      </div>
       <MachineDoc data={machineDocData} stateValue={stateValue} />
     </div>
   )
